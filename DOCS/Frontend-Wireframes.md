@@ -52,6 +52,6 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-  H[Modal Header: Select Layout] --> G[Grid: 43 JPG Previews]
+  H[Modal Header: Select Layout] --> G[Grid: SVG Previews]
   G --> S[Click Preview -> Apply Layout]
 ```
