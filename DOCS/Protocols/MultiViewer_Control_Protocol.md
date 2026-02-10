@@ -280,7 +280,7 @@ curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2721/2"
 | **2703** | Enable | GET/SET | 0=Disabled, 1=Enabled |
 | **2704** | Layout Selection | GET/SET | Вибір layout |
 | **2705** | Chassis Location | GET/SET | Розташування chassis |
-| **2706** | Copy To | GET/SET | Копіювати налаштування на інший MV (номер MV) |
+| **2706** | Copy To | SET (write-only) | ⚠️ Копіювати налаштування на інший MV (номер MV). Write-only команда, не повертає значення. |
 | **2716** | Text Font | GET/SET | Шрифт тексту |
 | **2720** | Output Format | GET/SET | Формат виходу |
 
@@ -304,7 +304,7 @@ curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2703.3/0"
 |-------|----------|-----|------|
 | **2726** | Outer Border Pixels | GET/SET | Товщина зовнішньої рамки (пікселі) |
 | **2727** | Inner Border Pixels | GET/SET | Товщина внутрішньої рамки (пікселі) |
-| **2735** | Update Preview | SET | Оновити preview (SET=1) |
+| **2735** | Update Preview | SET (write-only) | ⚠️ Оновити preview (SET=1). Write-only команда, викликається після змін для оновлення відображення. |
 | **2736** | Thumbnail | GET | JSON з Base64 PNG зображенням |
 
 **Приклади:**
@@ -738,41 +738,233 @@ OUTPUT_FILE="mv_config_backup.json"
 
 | Параметр | Значення |
 |----------|----------|
-| Максимум мультів'юверів | 120 |
+| Максимум мультів'юверів | 120 (залежить від ліцензії та конфігурації) |
 | Максимум вікон на MV | 16 |
 | Максимум UMD шарів | 3 |
 | Формат кольору | 0xRRGGBB (hex) |
 | Діапазон Alpha | 0-255 |
+| SDI входи для Global ATC | 0-959 (960 входів) |
 
 ### 11.2 Важливі примітки
 
-1. **JSON параметри** - деякі складні параметри не можна змінювати через EV API, використовуйте PT API
-2. **Preview Update** - після змін завжди викликайте VarID 2735 для оновлення preview
-3. **Індекси** - завжди використовуйте правильний діапазон індексів
-4. **URL Encoding** - спеціальні символи в текстових полях потрібно кодувати (пробіл = %20)
-5. **Rate Limiting** - не перевищуйте розумну частоту запитів (рекомендовано < 10 req/sec)
+1. **Write-Only параметри** - VarID 2706 (Copy To) та 2735 (Update Preview) є write-only командами. Вони не повертають значення при GET запитах і не зберігають стан.
+2. **JSON параметри** - деякі складні параметри не можна змінювати через EV API, використовуйте PT API
+3. **Preview Update** - після змін UMD, позицій або кольорів завжди викликайте VarID 2735 для оновлення preview
+4. **Індекси** - завжди використовуйте правильний діапазон індексів. Діапазон мультів'юверів залежить від конфігурації та ліцензії (VarID 2700-2702)
+5. **URL Encoding** - спеціальні символи в текстових полях потрібно кодувати (пробіл = %20)
+6. **Rate Limiting** - не перевищуйте розумну частоту запитів (рекомендовано < 10 req/sec)
+7. **Ліцензування** - кількість доступних мультів'юверів залежить від ліцензії (перевіряйте VarID 2701)
 
 ---
 
-## 12. КОДИ ПОМИЛОК
+## 12. ПЕРЕВІРКА КОНФІГУРАЦІЇ
 
-| Error | Опис |
-|-------|------|
-| `Invalid parameter` | Невірний VarID або індекс |
-| `Invalid value` | Недопустиме значення |
-| `Permission denied` | Недостатньо прав (потрібен rw-user або admin) |
-| `JWT expired` | JWT токен прострочений, потрібен refresh |
+### 12.1 Перевірка доступних ресурсів
+
+Перед початком роботи рекомендується перевірити конфігурацію системи:
+
+```bash
+BASE_URL="http://192.168.225.35/v.api/apis/EV/GET"
+
+# Перевірити кількість MV
+echo "=== Multiviewer Resources ==="
+curl -s "$BASE_URL/parameters/2700,2701,2702" | jq '.'
+
+# Результат:
+# {
+#   "2700": "120",  // Максимум MV в chassis
+#   "2701": "48",   // Ліцензовано MV
+#   "2702": "24"    // Активовано MV
+# }
+
+# Перевірити кількість SDI входів
+curl -s "$BASE_URL/parameter/2600"
+```
+
+### 12.2 Перевірка активності MV
+
+```bash
+#!/bin/bash
+BASE_URL="http://192.168.225.35/v.api/apis/EV/GET"
+
+# Отримати кількість ліцензованих MV
+LICENSED=$(curl -s "$BASE_URL/parameter/2701" | jq -r '.["2701"]')
+
+echo "Checking $LICENSED licensed multiviewers..."
+
+for i in $(seq 0 $((LICENSED-1))); do
+  ENABLED=$(curl -s "$BASE_URL/parameter/2703.$i" | jq -r ".\"2703.$i\"")
+  if [ "$ENABLED" == "1" ]; then
+    echo "MV #$i: ENABLED"
+  else
+    echo "MV #$i: DISABLED"
+  fi
+done
+```
 
 ---
 
-## 13. КОРИСНІ ПОСИЛАННЯ
+## 13. КОДИ ПОМИЛОК ТА ДІАГНОСТИКА
+
+### 13.1 Коди помилок
+
+| Error | Опис | Рішення |
+|-------|------|---------|
+| `Invalid parameter` | Невірний VarID або індекс | Перевірте діапазон індексів та номер VarID |
+| `Invalid value` | Недопустиме значення | Перевірте допустимі значення для параметра |
+| `Permission denied` | Недостатньо прав | Використовуйте rw-user або administrator роль |
+| `JWT expired` | JWT токен прострочений | Викличте JWTREFRESH для оновлення токена |
+| `Product option not available` | Функція не ліцензована | Перевірте ліцензію (VarID 857, 2701) |
+
+### 13.2 Діагностика проблем
+
+**Проблема: UMD не оновлюється після SET**
+```bash
+# Рішення: викликайте Update Preview
+curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2735.0/1"
+```
+
+**Проблема: MV не відображається**
+```bash
+# Перевірте чи увімкнений MV
+curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2703.0"
+
+# Увімкніть MV якщо потрібно
+curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2703.0/1"
+
+# Перевірте output format
+curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2720.0"
+```
+
+**Проблема: Не вистачає мультів'юверів**
+```bash
+# Перевірте ліцензію
+curl "http://192.168.225.35/v.api/apis/EV/GET/parameters/2700,2701,2702"
+```
+
+---
+
+## 14. ШВИДКИЙ ДОВІДНИК - ВСІ ПАРАМЕТРИ MV
+
+### 14.1 Глобальні параметри (без індексів)
+
+| VarID | Параметр | R/W | Тип | Діапазон/Enum |
+|-------|----------|-----|-----|---------------|
+| 2700 | Chassis Total Multiviewers | R | int | Максимум в системі |
+| 2701 | Licensed Multiviewers | R | int | Ліцензовано |
+| 2702 | Enabled Multiviewers | R | int | Активовано |
+| 2721 | Window Size | R/W | enum | 0=Full, 1=Reduced Small, 2=Medium, 3=Large |
+| 2722 | Timecode Source | R/W | enum | 0=Local ATC, 1=NTP, 2=NTP+offset, 3-6=Global ATC 1-4 |
+| 2734 | Timecode Format | R/W | enum | 0=HH:MM:SS:FF.F, 1=HH:MM:SS |
+| 2723 | NTP Offset Direction | R/W | enum | 0="+", 1="-" |
+| 2724 | NTP Offset Hours | R/W | int | 0-23 |
+| 2725 | NTP Offset Minutes | R/W | int | 0-59 |
+| 2729 | Global ATC 1 Source | R/W | int | 0-959 (SDI input) |
+| 2730 | Global ATC 2 Source | R/W | int | 0-959 (SDI input) |
+| 2731 | Global ATC 3 Source | R/W | int | 0-959 (SDI input) |
+| 2732 | Global ATC 4 Source | R/W | int | 0-959 (SDI input) |
+
+### 14.2 Параметри MV [0..119]
+
+| VarID | Параметр | R/W | Тип | Опис |
+|-------|----------|-----|-----|------|
+| 2703.X | Enable | R/W | enum | 0=Disabled, 1=Enabled |
+| 2704.X | Layout Selection | R/W | int | Номер layout |
+| 2705.X | Chassis Location | R/W | string | Розташування |
+| 2706.X | Copy To | W | int | Копіювати на інший MV |
+| 2716.X | Text Font | R/W | int | Шрифт |
+| 2720.X | Output Format | R/W | int | Формат виходу |
+| 2726.X | Outer Border Pixels | R/W | int | Зовнішня рамка (px) |
+| 2727.X | Inner Border Pixels | R/W | int | Внутрішня рамка (px) |
+| 2735.X | Update Preview | W | - | Оновити preview (SET=1) |
+| 2736.X | Thumbnail | R | JSON | Base64 PNG preview |
+
+### 14.3 Параметри вікон [mv].[window 0..15]
+
+| VarID | Параметр | R/W | Тип | Опис |
+|-------|----------|-----|-----|------|
+| 2707.X.Y | Video Audio Source | R/W | int | Audio follows video |
+| 2718.X.Y | Source Label | R/W | string | Мітка джерела |
+| 2719.X.Y | PCM Audio Bars | R/W | enum | Аудіо індикатори |
+
+### 14.4 UMD елементи [mv].[window].[layer 0..2]
+
+| VarID | Параметр | R/W | Тип | Діапазон | Опис |
+|-------|----------|-----|-----|----------|------|
+| 2708.X.Y.Z | UMD Selection | R/W | enum | - | Тип UMD елемента |
+| 2709.X.Y.Z | UMD Text | R/W | string | - | Статичний текст |
+| 2710.X.Y.Z | UMD Box Colour | R/W | hex | 0x000000-0xFFFFFF | Колір фону (RGB) |
+| 2711.X.Y.Z | UMD Box Alpha | R/W | int | 0-255 | Прозорість фону |
+| 2712.X.Y.Z | UMD Box X | R/W | int | pixels | Позиція X |
+| 2713.X.Y.Z | UMD Box Y | R/W | int | pixels | Позиція Y |
+| 2714.X.Y.Z | UMD Text Colour | R/W | hex | 0x000000-0xFFFFFF | Колір тексту (RGB) |
+| 2715.X.Y.Z | UMD Text Alpha | R/W | int | 0-255 | Прозорість тексту |
+| 2717.X.Y.Z | UMD Text Size | R/W | int | - | Розмір шрифту |
+| 2733.X.Y.Z | UMD Padding | R/W | int | pixels | Padding бокса |
+
+**Легенда:**
+- R/W = Read/Write (GET/SET)
+- R = Read only (тільки GET)
+- W = Write only (тільки SET, не зберігає стан)
+- X = номер MV [0..119]
+- Y = номер вікна [0..15]
+- Z = номер UMD шару [0..2]
+
+---
+
+## 15. ДОДАТКОВІ КОРИСНІ ПАРАМЕТРИ
+
+Хоча ці параметри не є напряму параметрами мультів'ювера, вони корисні при розробці ПЗ управління:
+
+### 13.1 SDI Input моніторинг
+
+| VarID | Параметр | Опис |
+|-------|----------|------|
+| **2600** | Num Inputs | Загальна кількість SDI входів |
+| **2606.[card].[port]** | SDI Input Present | Наявність сигналу на вході |
+| **2607.[card].[port]** | SDI Input Video Standard | Стандарт відео (1080i, 720p тощо) |
+| **2603.[card].[port]** | SDI Input Label | Назва входу |
+
+**Приклад:**
+```bash
+# Перевірити наявність сигналу на SDI Input 1
+curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2606.0.0"
+
+# Отримати стандарт відео
+curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2607.0.0"
+```
+
+### 13.2 SDI Output моніторинг
+
+| VarID | Параметр | Опис |
+|-------|----------|------|
+| **2650** | Num Outputs | Кількість SDI виходів |
+| **2654.[card].[port]** | SDI Output Label | Назва виходу |
+
+### 13.3 Progressive Scaler (для MV)
+
+| VarID | Параметр | Опис |
+|-------|----------|------|
+| **2750.[0..959]** | Input Video Present | Наявність вхідного відео на scaler |
+| **2751.[0..959]** | Input Video Standard | Стандарт вхідного відео |
+| **2752.[0..959]** | Output Video Format | Формат вихідного відео |
+| **2753.[0..959]** | Output Video Standard | Стандарт вихідного відео |
+
+**Примітка:** Progressive Scaler використовується для масштабування відео в мультів'ювері.
+
+---
+
+## 16. КОРИСНІ ПОСИЛАННЯ
 
 - WebEASY Interface: `http://<device-ip>`
 - API Summary: `http://<device-ip>/v.api/apis/EV/SUMMARY`
 - PT API Summary: `http://<device-ip>/v.api/apis/PT/SUMMARY`
+- API Documentation: `http://<device-ip>/v.api/apis/` (rest of endpoints)
 
 ---
 
-**Версія документа:** 1.0
-**Дата:** 2026-02-09
+**Версія документа:** 1.1
+**Дата створення:** 2026-02-09
+**Останнє оновлення:** 2026-02-09
 **Призначення:** Розробка ПЗ для управління Evertz Quartz MultiViewer
+**Базується на:** Evertz Quartz Control API specification + live system parameter dump analysis
