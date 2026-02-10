@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mvcontrol
+      POSTGRES_PASSWORD: mvcontrol
+      POSTGRES_DB: mvcontrol
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mvcontrol"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://mvcontrol:mvcontrol@db:5432/mvcontrol
+      SECRET_KEY: change-me-in-production
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

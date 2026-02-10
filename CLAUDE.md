@@ -8,7 +8,30 @@ MV-Control is a web system for managing broadcast multiviewers and video routing
 - **Quartz Protocol** (TCP) — routing control through Magnum server
 - **NEXX-API** (REST) — multiviewer parameter management through NEXX router
 
-Currently in **pre-implementation phase** — the repository contains only design documentation in `DOCS/`. All docs are written in Ukrainian.
+All design docs are in Ukrainian in `DOCS/`.
+
+## Development Commands
+
+```bash
+# Backend (from backend/)
+source /tmp/mv-venv/bin/activate   # or create venv: python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload      # dev server at :8000
+alembic upgrade head               # run migrations (needs PostgreSQL)
+alembic revision -m "description"  # create new migration
+
+# Frontend (from frontend/)
+npm install
+npm run dev                        # dev server at :5173 (proxies /api + /auth to :8000)
+npm run build                      # production build → dist/
+
+# Docker (from root)
+docker compose up --build          # full stack: app + PostgreSQL
+docker compose down                # stop
+
+# Verify
+cd backend && python -c "from app.main import app; print([r.path for r in app.routes])"
+```
 
 ## Tech Stack
 
