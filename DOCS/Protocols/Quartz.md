@@ -111,6 +111,17 @@ Routes video input 7 to output 1.
 - Hardware/system error
 - Resource unavailable
 
+
+#### Standard Router Responses
+**Code Meaning**
+.A Acknowledge — command accepted / reply data follows
+
+.E Error — bad command or invalid parameters
+
+.B Barred — action refused (output is locked)
+
+.U{levels}{dest},{src} Update — a cross-point changed
+
 ## Implementation Guidelines
 
 ### Connection Management
