@@ -1,6 +1,6 @@
 # Evertz Quartz MultiViewer - Протокол Управління
 
-Детальна специфікація REST API для розробки програмного забезпечення управління мультив'ювером.
+Детальна специфікація REST API роутера NEXX. Частина мультивювера.
 
 ---
 
@@ -192,8 +192,8 @@ curl "http://192.168.225.35/v.api/apis/EV/GET/parameters/2700,2701,2702"
 ```json
 {
   "2700": "120",
-  "2701": "96",
-  "2702": "64"
+  "2701": "48",
+  "2702": "24"
 }
 ```
 
@@ -277,24 +277,8 @@ curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2721/2"
 
 | VarID | Параметр | Тип | Опис |
 |-------|----------|-----|------|
-| **2703** | Enable | GET/SET | 0=Disabled, 1=Enabled |
 | **2704** | Layout Selection | GET/SET | Вибір layout |
-| **2705** | Chassis Location | GET/SET | Розташування chassis |
-| **2706** | Copy To | SET (write-only) | ⚠️ Копіювати налаштування на інший MV (номер MV). Write-only команда, не повертає значення. |
 | **2716** | Text Font | GET/SET | Шрифт тексту |
-| **2720** | Output Format | GET/SET | Формат виходу |
-
-**Приклади:**
-```bash
-# Увімкнути MV #5
-curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2703.5/1"
-
-# Копіювати налаштування з MV#0 на MV#10
-curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2706.0/10"
-
-# Вимкнути MV #3
-curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2703.3/0"
-```
 
 ---
 
@@ -304,8 +288,6 @@ curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2703.3/0"
 |-------|----------|-----|------|
 | **2726** | Outer Border Pixels | GET/SET | Товщина зовнішньої рамки (пікселі) |
 | **2727** | Inner Border Pixels | GET/SET | Товщина внутрішньої рамки (пікселі) |
-| **2735** | Update Preview | SET (write-only) | ⚠️ Оновити preview (SET=1). Write-only команда, викликається після змін для оновлення відображення. |
-| **2736** | Thumbnail | GET | JSON з Base64 PNG зображенням |
 
 **Приклади:**
 ```bash
@@ -315,35 +297,6 @@ curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2726.0/5"
 # Встановити внутрішню рамку 2px для MV#0
 curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2727.0/2"
 
-# Оновити preview для MV#8
-curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2735.8/1"
-```
-
----
-
-### 6.3 Thumbnail Preview (VarID 2736)
-
-**Формат відповіді:**
-```json
-{
-  "id": "2736.0@s",
-  "name": "Thumbnail",
-  "type": "json",
-  "value": {
-    "data": "iVBORw0KGgoAAAANSUhEUgAA...",
-    "width": "576",
-    "height": "324",
-    "type": "png",
-    "timer": {
-      "refresh": "1000"
-    }
-  }
-}
-```
-
-**Приклад отримання:**
-```bash
-curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2736.15"
 ```
 
 ---
@@ -358,15 +311,10 @@ curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2736.15"
 
 | VarID | Параметр | Тип | Опис |
 |-------|----------|-----|------|
-| **2707** | Video Audio Source | GET/SET | Audio follows video routing |
-| **2718** | Source Label | GET/SET | Мітка джерела |
 | **2719** | PCM Audio Bars | GET/SET | Відображення аудіо індикаторів |
 
 **Приклади:**
 ```bash
-# Встановити мітку для MV#0, вікно#3
-curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2718.0.3/CAM1"
-
 # Увімкнути аудіо індикатори для MV#5, вікно#7
 curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2719.5.7/1"
 ```
@@ -492,46 +440,6 @@ curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2733.0.0.0/5"
 
 ---
 
-## 9. ПРИКЛАДИ ВИКОРИСТАННЯ
-
-### 9.1 Налаштування базового UMD
-
-```bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV"
-MV=0        # Multiviewer #0
-WINDOW=0    # Window #0
-LAYER=0     # Layer #0
-
-# Встановити текст "CAM 1"
-curl "$BASE_URL/SET/parameter/2709.$MV.$WINDOW.$LAYER/CAM%201"
-
-# Червоний фон (0xFF0000)
-curl "$BASE_URL/SET/parameter/2710.$MV.$WINDOW.$LAYER/0xFF0000"
-
-# Непрозорий фон (255)
-curl "$BASE_URL/SET/parameter/2711.$MV.$WINDOW.$LAYER/255"
-
-# Позиція X=10, Y=10
-curl "$BASE_URL/SET/parameters/2712.$MV.$WINDOW.$LAYER,2713.$MV.$WINDOW.$LAYER/10,10"
-
-# Білий текст (0xFFFFFF)
-curl "$BASE_URL/SET/parameter/2714.$MV.$WINDOW.$LAYER/0xFFFFFF"
-
-# Непрозорий текст (255)
-curl "$BASE_URL/SET/parameter/2715.$MV.$WINDOW.$LAYER/255"
-
-# Розмір шрифту 20
-curl "$BASE_URL/SET/parameter/2717.$MV.$WINDOW.$LAYER/20"
-
-# Padding 5px
-curl "$BASE_URL/SET/parameter/2733.$MV.$WINDOW.$LAYER/5"
-
-# Оновити preview
-curl "$BASE_URL/SET/parameter/2735.$MV/1"
-```
-
----
-
 ### 9.2 Моніторинг стану мультів'ювера
 
 ```bash
@@ -544,190 +452,6 @@ curl "$BASE_URL/parameters/2700,2701,2702"
 MV=5
 curl "$BASE_URL/parameter/2703.$MV"
 
-# Отримати thumbnail preview
-curl "$BASE_URL/parameter/2736.$MV"
-```
-
----
-
-### 9.3 Копіювання конфігурації між MV
-
-```bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV"
-
-# Копіювати налаштування з MV#0 на MV#1, MV#2, MV#3
-curl "$BASE_URL/SET/parameter/2706.0/1"
-curl "$BASE_URL/SET/parameter/2706.0/2"
-curl "$BASE_URL/SET/parameter/2706.0/3"
-```
-
----
-
-### 9.4 Створення кольорової схеми (Tally)
-
-```bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV/SET"
-MV=0
-WINDOW=0
-
-# PREVIEW (зелений фон, чорний текст)
-LAYER=0
-curl "$BASE_URL/parameter/2709.$MV.$WINDOW.$LAYER/PVW"
-curl "$BASE_URL/parameter/2710.$MV.$WINDOW.$LAYER/0x00FF00"  # зелений
-curl "$BASE_URL/parameter/2714.$MV.$WINDOW.$LAYER/0x000000"  # чорний текст
-curl "$BASE_URL/parameter/2711.$MV.$WINDOW.$LAYER/200"
-curl "$BASE_URL/parameter/2715.$MV.$WINDOW.$LAYER/255"
-
-# PROGRAM (червоний фон, білий текст)
-LAYER=1
-curl "$BASE_URL/parameter/2709.$MV.$WINDOW.$LAYER/PGM"
-curl "$BASE_URL/parameter/2710.$MV.$WINDOW.$LAYER/0xFF0000"  # червоний
-curl "$BASE_URL/parameter/2714.$MV.$WINDOW.$LAYER/0xFFFFFF"  # білий текст
-curl "$BASE_URL/parameter/2711.$MV.$WINDOW.$LAYER/200"
-curl "$BASE_URL/parameter/2715.$MV.$WINDOW.$LAYER/255"
-
-# Оновити preview
-curl "$BASE_URL/parameter/2735.$MV/1"
-```
-
----
-
-### 9.5 Batch операції (кілька параметрів одночасно)
-
-```bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV"
-
-# Встановити позицію та розмір одночасно
-curl "$BASE_URL/SET/parameters/2712.0.0.0,2713.0.0.0,2717.0.0.0/10,10,24"
-
-# Встановити колір фону та тексту одночасно
-curl "$BASE_URL/SET/parameters/2710.0.0.0,2714.0.0.0/0xFF0000,0xFFFFFF"
-```
-
----
-
-## 10. ТИПОВІ СЦЕНАРІЇ
-
-### 10.1 Ініціалізація нового мультів'ювера
-
-```bash
-#!/bin/bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV/SET"
-MV=0
-
-# 1. Увімкнути MV
-curl "$BASE_URL/parameter/2703.$MV/1"
-
-# 2. Встановити layout
-curl "$BASE_URL/parameter/2704.$MV/1"
-
-# 3. Встановити output format
-curl "$BASE_URL/parameter/2720.$MV/1080p50"
-
-# 4. Встановити рамки
-curl "$BASE_URL/parameters/2726.$MV,2727.$MV/5,2"
-
-# 5. Встановити шрифт
-curl "$BASE_URL/parameter/2716.$MV/0"
-
-# 6. Оновити preview
-curl "$BASE_URL/parameter/2735.$MV/1"
-```
-
----
-
-### 10.2 Налаштування UMD для всіх вікон
-
-```bash
-#!/bin/bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV/SET"
-MV=0
-LAYER=0
-
-# Налаштувати UMD для вікон 0-15
-for WINDOW in {0..15}; do
-  # Текст
-  curl "$BASE_URL/parameter/2709.$MV.$WINDOW.$LAYER/WIN%20$((WINDOW+1))"
-
-  # Колір фону (синій)
-  curl "$BASE_URL/parameter/2710.$MV.$WINDOW.$LAYER/0x0000FF"
-
-  # Колір тексту (білий)
-  curl "$BASE_URL/parameter/2714.$MV.$WINDOW.$LAYER/0xFFFFFF"
-
-  # Прозорість
-  curl "$BASE_URL/parameters/2711.$MV.$WINDOW.$LAYER,2715.$MV.$WINDOW.$LAYER/200,255"
-
-  # Розмір тексту
-  curl "$BASE_URL/parameter/2717.$MV.$WINDOW.$LAYER/18"
-done
-
-# Оновити preview
-curl "$BASE_URL/parameter/2735.$MV/1"
-```
-
----
-
-### 10.3 Моніторинг стану системи
-
-```bash
-#!/bin/bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV/GET"
-
-while true; do
-  echo "=== MultiViewer Status ==="
-
-  # Отримати інформацію про систему
-  curl -s "$BASE_URL/parameters/2700,2701,2702" | jq '.'
-
-  # Отримати стан активних MV
-  for MV in {0..7}; do
-    STATUS=$(curl -s "$BASE_URL/parameter/2703.$MV" | jq -r ".\"2703.$MV\"")
-    echo "MV #$MV: $STATUS"
-  done
-
-  sleep 5
-done
-```
-
----
-
-### 10.4 Backup конфігурації
-
-```bash
-#!/bin/bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV/GET"
-OUTPUT_FILE="mv_config_backup.json"
-
-# Створити JSON з конфігурацією
-{
-  echo "{"
-  echo "  \"global\": {"
-
-  # Глобальні параметри
-  for VARID in 2700 2701 2702 2721 2722 2729 2730 2731 2732; do
-    curl -s "$BASE_URL/parameter/$VARID"
-  done
-
-  echo "  },"
-  echo "  \"multiviewers\": ["
-
-  # Конфігурація кожного MV
-  for MV in {0..119}; do
-    echo "    {"
-    echo "      \"id\": $MV,"
-
-    # Параметри MV
-    for VARID in 2703 2704 2705 2716 2720 2726 2727; do
-      curl -s "$BASE_URL/parameter/$VARID.$MV"
-    done
-
-    echo "    },"
-  done
-
-  echo "  ]"
-  echo "}"
-} > "$OUTPUT_FILE"
 ```
 
 ---
@@ -747,100 +471,11 @@ OUTPUT_FILE="mv_config_backup.json"
 
 ### 11.2 Важливі примітки
 
-1. **Write-Only параметри** - VarID 2706 (Copy To) та 2735 (Update Preview) є write-only командами. Вони не повертають значення при GET запитах і не зберігають стан.
 2. **JSON параметри** - деякі складні параметри не можна змінювати через EV API, використовуйте PT API
-3. **Preview Update** - після змін UMD, позицій або кольорів завжди викликайте VarID 2735 для оновлення preview
 4. **Індекси** - завжди використовуйте правильний діапазон індексів. Діапазон мультів'юверів залежить від конфігурації та ліцензії (VarID 2700-2702)
 5. **URL Encoding** - спеціальні символи в текстових полях потрібно кодувати (пробіл = %20)
 6. **Rate Limiting** - не перевищуйте розумну частоту запитів (рекомендовано < 10 req/sec)
 7. **Ліцензування** - кількість доступних мультів'юверів залежить від ліцензії (перевіряйте VarID 2701)
-
----
-
-## 12. ПЕРЕВІРКА КОНФІГУРАЦІЇ
-
-### 12.1 Перевірка доступних ресурсів
-
-Перед початком роботи рекомендується перевірити конфігурацію системи:
-
-```bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV/GET"
-
-# Перевірити кількість MV
-echo "=== Multiviewer Resources ==="
-curl -s "$BASE_URL/parameters/2700,2701,2702" | jq '.'
-
-# Результат:
-# {
-#   "2700": "120",  // Максимум MV в chassis
-#   "2701": "48",   // Ліцензовано MV
-#   "2702": "24"    // Активовано MV
-# }
-
-# Перевірити кількість SDI входів
-curl -s "$BASE_URL/parameter/2600"
-```
-
-### 12.2 Перевірка активності MV
-
-```bash
-#!/bin/bash
-BASE_URL="http://192.168.225.35/v.api/apis/EV/GET"
-
-# Отримати кількість ліцензованих MV
-LICENSED=$(curl -s "$BASE_URL/parameter/2701" | jq -r '.["2701"]')
-
-echo "Checking $LICENSED licensed multiviewers..."
-
-for i in $(seq 0 $((LICENSED-1))); do
-  ENABLED=$(curl -s "$BASE_URL/parameter/2703.$i" | jq -r ".\"2703.$i\"")
-  if [ "$ENABLED" == "1" ]; then
-    echo "MV #$i: ENABLED"
-  else
-    echo "MV #$i: DISABLED"
-  fi
-done
-```
-
----
-
-## 13. КОДИ ПОМИЛОК ТА ДІАГНОСТИКА
-
-### 13.1 Коди помилок
-
-| Error | Опис | Рішення |
-|-------|------|---------|
-| `Invalid parameter` | Невірний VarID або індекс | Перевірте діапазон індексів та номер VarID |
-| `Invalid value` | Недопустиме значення | Перевірте допустимі значення для параметра |
-| `Permission denied` | Недостатньо прав | Використовуйте rw-user або administrator роль |
-| `JWT expired` | JWT токен прострочений | Викличте JWTREFRESH для оновлення токена |
-| `Product option not available` | Функція не ліцензована | Перевірте ліцензію (VarID 857, 2701) |
-
-### 13.2 Діагностика проблем
-
-**Проблема: UMD не оновлюється після SET**
-```bash
-# Рішення: викликайте Update Preview
-curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2735.0/1"
-```
-
-**Проблема: MV не відображається**
-```bash
-# Перевірте чи увімкнений MV
-curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2703.0"
-
-# Увімкніть MV якщо потрібно
-curl "http://192.168.225.35/v.api/apis/EV/SET/parameter/2703.0/1"
-
-# Перевірте output format
-curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2720.0"
-```
-
-**Проблема: Не вистачає мультів'юверів**
-```bash
-# Перевірте ліцензію
-curl "http://192.168.225.35/v.api/apis/EV/GET/parameters/2700,2701,2702"
-```
 
 ---
 
@@ -870,14 +505,11 @@ curl "http://192.168.225.35/v.api/apis/EV/GET/parameters/2700,2701,2702"
 |-------|----------|-----|-----|------|
 | 2703.X | Enable | R/W | enum | 0=Disabled, 1=Enabled |
 | 2704.X | Layout Selection | R/W | int | Номер layout |
-| 2705.X | Chassis Location | R/W | string | Розташування |
-| 2706.X | Copy To | W | int | Копіювати на інший MV |
 | 2716.X | Text Font | R/W | int | Шрифт |
 | 2720.X | Output Format | R/W | int | Формат виходу |
 | 2726.X | Outer Border Pixels | R/W | int | Зовнішня рамка (px) |
 | 2727.X | Inner Border Pixels | R/W | int | Внутрішня рамка (px) |
 | 2735.X | Update Preview | W | - | Оновити preview (SET=1) |
-| 2736.X | Thumbnail | R | JSON | Base64 PNG preview |
 
 ### 14.3 Параметри вікон [mv].[window 0..15]
 
@@ -912,48 +544,6 @@ curl "http://192.168.225.35/v.api/apis/EV/GET/parameters/2700,2701,2702"
 
 ---
 
-## 15. ДОДАТКОВІ КОРИСНІ ПАРАМЕТРИ
-
-Хоча ці параметри не є напряму параметрами мультів'ювера, вони корисні при розробці ПЗ управління:
-
-### 13.1 SDI Input моніторинг
-
-| VarID | Параметр | Опис |
-|-------|----------|------|
-| **2600** | Num Inputs | Загальна кількість SDI входів |
-| **2606.[card].[port]** | SDI Input Present | Наявність сигналу на вході |
-| **2607.[card].[port]** | SDI Input Video Standard | Стандарт відео (1080i, 720p тощо) |
-| **2603.[card].[port]** | SDI Input Label | Назва входу |
-
-**Приклад:**
-```bash
-# Перевірити наявність сигналу на SDI Input 1
-curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2606.0.0"
-
-# Отримати стандарт відео
-curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2607.0.0"
-```
-
-### 13.2 SDI Output моніторинг
-
-| VarID | Параметр | Опис |
-|-------|----------|------|
-| **2650** | Num Outputs | Кількість SDI виходів |
-| **2654.[card].[port]** | SDI Output Label | Назва виходу |
-
-### 13.3 Progressive Scaler (для MV)
-
-| VarID | Параметр | Опис |
-|-------|----------|------|
-| **2750.[0..959]** | Input Video Present | Наявність вхідного відео на scaler |
-| **2751.[0..959]** | Input Video Standard | Стандарт вхідного відео |
-| **2752.[0..959]** | Output Video Format | Формат вихідного відео |
-| **2753.[0..959]** | Output Video Standard | Стандарт вихідного відео |
-
-**Примітка:** Progressive Scaler використовується для масштабування відео в мультів'ювері.
-
----
-
 ## 16. КОРИСНІ ПОСИЛАННЯ
 
 - WebEASY Interface: `http://<device-ip>`
@@ -963,7 +553,7 @@ curl "http://192.168.225.35/v.api/apis/EV/GET/parameter/2607.0.0"
 
 ---
 
-**Версія документа:** 1.1
+**Версія документа:** 1.2
 **Дата створення:** 2026-02-09
 **Останнє оновлення:** 2026-02-09
 **Призначення:** Розробка ПЗ для управління Evertz Quartz MultiViewer
