@@ -22,18 +22,30 @@ def do_refresh(admin=Depends(require_admin), db: Session = Depends(get_db)):
     if last and (now - last).total_seconds() < 60:
         raise HTTPException(status_code=429, detail="Refresh throttled. Try again later.")
 
-    results = {"nexx": None, "quartz": None, "timestamp": now.isoformat()}
+    results = {"nexx": None, "quartz": None, "timestamp": now.isoformat(), "errors": []}
 
     nexx = get_nexx_client(db)
     if nexx:
-        results["nexx"] = refresh_nexx_state(db, nexx)
+        try:
+            results["nexx"] = refresh_nexx_state(db, nexx)
+        except Exception as e:
+            results["errors"].append(f"NEXX error: {str(e)}")
+            results["nexx"] = {"error": str(e)}
 
     quartz = get_quartz_client(db)
     if quartz:
-        from app.models.multiviewer import Multiviewer
-        mv_count = db.query(Multiviewer).count()
-        max_outputs = mv_count * 16
-        results["quartz"] = refresh_quartz_state(db, quartz, max_sources=960, max_outputs=max_outputs)
+        try:
+            from app.models.integration import Integration
+            quartz_integration = db.query(Integration).filter(Integration.protocol == "quartz").first()
+            max_inputs = quartz_integration.max_inputs if quartz_integration and quartz_integration.max_inputs else 960
+            max_outputs = quartz_integration.max_outputs if quartz_integration and quartz_integration.max_outputs else 960
+            results["quartz"] = refresh_quartz_state(db, quartz, max_sources=max_inputs, max_outputs=max_outputs)
+        except Exception as e:
+            results["errors"].append(f"Quartz error: {str(e)}")
+            results["quartz"] = {"error": str(e)}
+
+    if not nexx and not quartz:
+        raise HTTPException(status_code=400, detail="No integrations configured. Please configure Quartz and/or NEXX in Admin → Integrations.")
 
     _last_refresh[user_id] = now
     return results

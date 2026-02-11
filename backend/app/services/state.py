@@ -10,6 +10,7 @@ from app.models.source import Source
 from app.models.state import StateMV, StateWindow, StateRouting
 
 VARID_ENABLED_MVS = "2702"
+VARID_MV_ENABLE = "2703"
 VARID_MV_LAYOUT = "2704"
 VARID_MV_FONT = "2716"
 VARID_MV_OUTER_BORDER = "2726"
@@ -34,10 +35,61 @@ UMD_VARIDS = [
 
 
 def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
-    enabled_count = int(nexx.get_parameter(VARID_ENABLED_MVS))
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        raw_count = nexx.get_parameter(VARID_ENABLED_MVS)
+    except Exception as e:
+        raise ValueError(f"Failed to connect to NEXX: {str(e)}")
+
+    # Handle both string and int responses
+    if isinstance(raw_count, int):
+        max_mv_count = raw_count
+    elif isinstance(raw_count, str):
+        if not raw_count.strip():
+            raise ValueError("NEXX returned empty response. Check if NEXX API is accessible and API key is correct.")
+        try:
+            max_mv_count = int(raw_count)
+        except ValueError:
+            raise ValueError(f"NEXX returned invalid count value: '{raw_count}'")
+    else:
+        raise ValueError(f"NEXX returned unexpected type: {type(raw_count)}")
+
+    # Limit to reasonable max (120 is chassis total, but we only sync enabled ones)
+    max_mv_count = min(max_mv_count, 120)
+    logger.info(f"[NEXX Sync] Max MV count from API: {max_mv_count}")
+
     results = {"mvs_synced": 0, "errors": []}
 
-    for mv_idx in range(enabled_count):
+    # Query which MVs are actually enabled (VarID 2703.X)
+    enabled_flags = {}
+    try:
+        varids = [f"{VARID_MV_ENABLE}.{idx}" for idx in range(max_mv_count)]
+        enabled_params = nexx.get_parameters(varids)
+        logger.debug(f"[NEXX Sync] Enabled params response: {enabled_params}")
+
+        for idx in range(max_mv_count):
+            key = f"{VARID_MV_ENABLE}.{idx}"
+            value = enabled_params.get(key, 0)
+            # Value could be int, str, or None
+            if value is None or value == "" or value == 0 or value == "0":
+                enabled_flags[idx] = False
+            else:
+                enabled_flags[idx] = int(value) == 1
+
+        logger.info(f"[NEXX Sync] Enabled MVs: {[idx for idx, en in enabled_flags.items() if en]}")
+    except Exception as e:
+        logger.error(f"[NEXX Sync] Failed to fetch enabled flags: {e}", exc_info=True)
+        # Fallback: assume first 3 are enabled
+        enabled_flags = {0: True, 1: True, 2: True}
+        logger.info(f"[NEXX Sync] Using fallback enabled MVs: {[0, 1, 2]}")
+
+    for mv_idx in range(max_mv_count):
+        if not enabled_flags.get(mv_idx, False):
+            continue  # Skip disabled MVs
+
+        logger.info(f"[NEXX Sync] Syncing MV {mv_idx}...")
         try:
             mv = db.query(Multiviewer).filter(Multiviewer.nexx_index == mv_idx).first()
             if not mv:
@@ -57,14 +109,15 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
                 state = StateMV(mv_id=mv.id)
                 db.add(state)
 
-            state.layout = int(params.get(f"{VARID_MV_LAYOUT}.{mv_idx}", 0))
-            state.font = int(params.get(f"{VARID_MV_FONT}.{mv_idx}", 0))
-            state.outer_border = int(params.get(f"{VARID_MV_OUTER_BORDER}.{mv_idx}", 0))
-            state.inner_border = int(params.get(f"{VARID_MV_INNER_BORDER}.{mv_idx}", 0))
+            # Safe int conversion (handles both int and str from API)
+            state.layout = int(params.get(f"{VARID_MV_LAYOUT}.{mv_idx}", 0) or 0)
+            state.font = int(params.get(f"{VARID_MV_FONT}.{mv_idx}", 0) or 0)
+            state.outer_border = int(params.get(f"{VARID_MV_OUTER_BORDER}.{mv_idx}", 0) or 0)
+            state.inner_border = int(params.get(f"{VARID_MV_INNER_BORDER}.{mv_idx}", 0) or 0)
             state.updated_at = datetime.now(timezone.utc)
 
-            for win_idx in range(16):
-                _sync_window(db, nexx, mv.id, mv_idx, win_idx)
+            # Batch fetch all window parameters for this MV (1 + 3 requests instead of 16 * 4 = 64)
+            _sync_all_windows_batched(db, nexx, mv.id, mv_idx)
 
             results["mvs_synced"] += 1
         except Exception as e:
@@ -74,60 +127,111 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
     return results
 
 
-def _sync_window(db: Session, nexx: NEXXClient, mv_id: int, mv_idx: int, win_idx: int):
-    pcm_param = nexx.get_parameter(f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}")
+def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx: int):
+    """Sync all 16 windows for one MV using batched requests (4 requests total instead of 64)"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"[NEXX Sync] Batching window params for MV {mv_idx} (4 requests for 16 windows)")
 
-    umd_data = []
+    # 1. Batch fetch all PCM bars for all 16 windows (1 request)
+    pcm_varids = [f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}" for win_idx in range(16)]
+    pcm_params = nexx.get_parameters(pcm_varids)
+
+    # 2. Batch fetch all UMD parameters for all windows, grouped by layer (3 requests)
+    umd_params_by_layer = {}
     for layer in range(3):
-        varids = [f"{vid}.{mv_idx}.{win_idx}.{layer}" for vid in UMD_VARIDS]
-        layer_params = nexx.get_parameters(varids)
-        umd_layer = {}
-        for vid in UMD_VARIDS:
-            key = f"{vid}.{mv_idx}.{win_idx}.{layer}"
-            umd_layer[vid] = layer_params.get(key, "")
-        umd_data.append(umd_layer)
+        # Fetch all UMD parameters for all windows for this layer
+        varids = []
+        for win_idx in range(16):
+            for vid in UMD_VARIDS:
+                varids.append(f"{vid}.{mv_idx}.{win_idx}.{layer}")
+        umd_params_by_layer[layer] = nexx.get_parameters(varids)
 
-    state = db.query(StateWindow).filter(
-        StateWindow.mv_id == mv_id, StateWindow.window_index == win_idx
-    ).first()
-    if not state:
-        state = StateWindow(mv_id=mv_id, window_index=win_idx)
-        db.add(state)
+    # 3. Process and save all windows
+    for win_idx in range(16):
+        # Get PCM for this window
+        pcm_key = f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}"
+        pcm_param = pcm_params.get(pcm_key, 0)
 
-    state.pcm_bars = int(pcm_param) if pcm_param else 0
-    state.umd_json = json.dumps(umd_data)
-    state.updated_at = datetime.now(timezone.utc)
+        # Build UMD data for this window (3 layers)
+        umd_data = []
+        for layer in range(3):
+            umd_layer = {}
+            for vid in UMD_VARIDS:
+                key = f"{vid}.{mv_idx}.{win_idx}.{layer}"
+                umd_layer[vid] = umd_params_by_layer[layer].get(key, "")
+            umd_data.append(umd_layer)
+
+        # Save to DB
+        state = db.query(StateWindow).filter(
+            StateWindow.mv_id == mv_id, StateWindow.window_index == win_idx
+        ).first()
+        if not state:
+            state = StateWindow(mv_id=mv_id, window_index=win_idx)
+            db.add(state)
+
+        # Safe int conversion (pcm_param could be int, str, or None)
+        state.pcm_bars = int(pcm_param) if pcm_param not in (None, "") else 0
+        state.umd_json = json.dumps(umd_data)
+        state.updated_at = datetime.now(timezone.utc)
 
 
 def refresh_quartz_state(db: Session, quartz: QuartzClient, max_sources: int, max_outputs: int) -> dict:
-    results = {"sources_synced": 0, "routing_synced": 0, "errors": []}
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import logging
 
-    for i in range(1, max_sources + 1):
-        try:
-            label = quartz.read_input_name(i)
-            source = db.query(Source).filter(Source.quartz_input == i).first()
-            if not source:
-                source = Source(quartz_input=i, label=label)
-                db.add(source)
-            else:
-                source.label = label
-            results["sources_synced"] += 1
-        except Exception as e:
-            results["errors"].append(f"Source {i}: {e}")
+    logger = logging.getLogger(__name__)
+    results = {"sources_synced": 0, "routes_synced": 0, "errors": []}
 
-    for out in range(1, max_outputs + 1):
-        try:
-            inp = quartz.read_routing(out)
-            route = db.query(StateRouting).filter(StateRouting.output == out).first()
-            if not route:
-                route = StateRouting(output=out, input=inp)
-                db.add(route)
-            else:
-                route.input = inp
-                route.updated_at = datetime.now(timezone.utc)
-            results["routing_synced"] += 1
-        except Exception as e:
-            results["errors"].append(f"Routing out {out}: {e}")
+    # Parallel fetch of input names (max 10 concurrent connections)
+    logger.info(f"[Quartz Sync] Fetching {max_sources} input names...")
+    input_data = {}
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_input = {executor.submit(quartz.read_input_name, i): i for i in range(1, max_sources + 1)}
+        for future in as_completed(future_to_input):
+            i = future_to_input[future]
+            try:
+                label = future.result()
+                input_data[i] = label
+            except Exception as e:
+                results["errors"].append(f"Source {i}: {e}")
 
+    # Save input names to DB
+    for i, label in input_data.items():
+        source = db.query(Source).filter(Source.quartz_input == i).first()
+        if not source:
+            source = Source(quartz_input=i, label=label)
+            db.add(source)
+        else:
+            source.label = label
+        results["sources_synced"] += 1
+
+    logger.info(f"[Quartz Sync] Synced {results['sources_synced']} sources")
+
+    # Parallel fetch of routing (max 10 concurrent connections)
+    logger.info(f"[Quartz Sync] Fetching {max_outputs} routing states...")
+    routing_data = {}
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_output = {executor.submit(quartz.read_routing, out): out for out in range(1, max_outputs + 1)}
+        for future in as_completed(future_to_output):
+            out = future_to_output[future]
+            try:
+                inp = future.result()
+                routing_data[out] = inp
+            except Exception as e:
+                results["errors"].append(f"Routing out {out}: {e}")
+
+    # Save routing to DB
+    for out, inp in routing_data.items():
+        route = db.query(StateRouting).filter(StateRouting.output == out).first()
+        if not route:
+            route = StateRouting(output=out, input=inp)
+            db.add(route)
+        else:
+            route.input = inp
+            route.updated_at = datetime.now(timezone.utc)
+        results["routes_synced"] += 1
+
+    logger.info(f"[Quartz Sync] Synced {results['routes_synced']} routes")
     db.commit()
     return results

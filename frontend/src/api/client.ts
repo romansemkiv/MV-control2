@@ -54,6 +54,8 @@ export const api = {
   getIntegrations: () => request('/api/integrations'),
   saveIntegration: (data: Record<string, unknown>) =>
     request('/api/integrations', { method: 'POST', body: JSON.stringify(data) }),
+  deleteIntegration: (protocol: string) =>
+    request(`/api/integrations/${protocol}`, { method: 'DELETE' }),
 
   // Presets
   getPresets: () => request('/api/presets'),

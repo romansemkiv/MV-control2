@@ -200,66 +200,241 @@ function AccessTab() {
 }
 
 function IntegrationsTab() {
+  const [integrations, setIntegrations] = useState<any[]>([])
+  const [editingQuartz, setEditingQuartz] = useState(false)
+  const [editingNexx, setEditingNexx] = useState(false)
   const [quartzHost, setQuartzHost] = useState('')
   const [quartzPort, setQuartzPort] = useState('6543')
+  const [quartzMaxInputs, setQuartzMaxInputs] = useState('960')
+  const [quartzMaxOutputs, setQuartzMaxOutputs] = useState('960')
   const [nexxHost, setNexxHost] = useState('')
   const [nexxKey, setNexxKey] = useState('')
-  const [status, setStatus] = useState('')
+  const [quartzStatus, setQuartzStatus] = useState<any>(null)
+  const [nexxStatus, setNexxStatus] = useState<any>(null)
 
-  useEffect(() => {
+  const loadIntegrations = () => {
     api.getIntegrations().then((items) => {
+      setIntegrations(items)
       const q = items.find((i: any) => i.protocol === 'quartz')
       const n = items.find((i: any) => i.protocol === 'nexx')
-      if (q) { setQuartzHost(q.host); setQuartzPort(String(q.port ?? 6543)) }
+      if (q) {
+        setQuartzHost(q.host)
+        setQuartzPort(String(q.port ?? 6543))
+        setQuartzMaxInputs(String(q.max_inputs ?? 960))
+        setQuartzMaxOutputs(String(q.max_outputs ?? 960))
+      }
       if (n) { setNexxHost(n.host); setNexxKey(n.api_key ?? '') }
     })
-  }, [])
+  }
+
+  useEffect(() => { loadIntegrations() }, [])
 
   const saveQuartz = async () => {
-    const res = await api.saveIntegration({ protocol: 'quartz', host: quartzHost, port: Number(quartzPort) })
-    setStatus(`Quartz: ${res.status?.message || 'Saved'}`)
+    const res = await api.saveIntegration({
+      protocol: 'quartz',
+      host: quartzHost,
+      port: Number(quartzPort),
+      max_inputs: Number(quartzMaxInputs),
+      max_outputs: Number(quartzMaxOutputs)
+    })
+    setQuartzStatus(res.status)
+    setEditingQuartz(false)
+    loadIntegrations()
   }
 
   const saveNexx = async () => {
     const res = await api.saveIntegration({ protocol: 'nexx', host: nexxHost, api_key: nexxKey })
-    setStatus(`NEXX: ${res.status?.message || 'Saved'}`)
+    setNexxStatus(res.status)
+    setEditingNexx(false)
+    loadIntegrations()
   }
 
+  const deleteIntegration = async (protocol: string) => {
+    await api.deleteIntegration(protocol)
+    if (protocol === 'quartz') setQuartzStatus(null)
+    if (protocol === 'nexx') setNexxStatus(null)
+    loadIntegrations()
+  }
+
+  const quartzIntegration = integrations.find((i) => i.protocol === 'quartz')
+  const nexxIntegration = integrations.find((i) => i.protocol === 'nexx')
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl">
+      {/* Quartz Section */}
       <div>
-        <h3 className="text-neutral-300 font-medium mb-2">Quartz (TCP)</h3>
-        <div className="flex gap-2">
-          <input value={quartzHost} onChange={(e) => setQuartzHost(e.target.value)} placeholder="IP address" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm" />
-          <input value={quartzPort} onChange={(e) => setQuartzPort(e.target.value)} placeholder="Port" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm w-24" />
-          <button onClick={saveQuartz} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-white text-sm">Save & Test</button>
-        </div>
+        <h3 className="text-neutral-300 font-medium mb-2">Quartz (TCP Routing)</h3>
+
+        {quartzIntegration && !editingQuartz ? (
+          <div className="p-3 bg-neutral-800 border border-neutral-700 rounded space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm text-neutral-300">{quartzIntegration.host}:{quartzIntegration.port}</p>
+                <p className="text-xs text-neutral-500">Max Inputs: {quartzIntegration.max_inputs ?? 'Not set'} | Max Outputs: {quartzIntegration.max_outputs ?? 'Not set'}</p>
+                {quartzStatus && (
+                  <p className={`text-xs mt-1 ${quartzStatus.ok ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${quartzStatus.ok ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                    {quartzStatus.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setEditingQuartz(true)} className="px-2 py-1 bg-neutral-700 hover:bg-neutral-600 rounded text-xs text-white">Edit</button>
+                <button onClick={() => deleteIntegration('quartz')} className="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">Delete</button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input value={quartzHost} onChange={(e) => setQuartzHost(e.target.value)} placeholder="IP address" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm flex-1" />
+              <input value={quartzPort} onChange={(e) => setQuartzPort(e.target.value)} placeholder="Port" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm w-24" />
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={quartzMaxInputs}
+                onChange={(e) => setQuartzMaxInputs(e.target.value)}
+                placeholder="Max Inputs"
+                type="number"
+                className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm flex-1"
+              />
+              <input
+                value={quartzMaxOutputs}
+                onChange={(e) => setQuartzMaxOutputs(e.target.value)}
+                placeholder="Max Outputs"
+                type="number"
+                className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm flex-1"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={saveQuartz} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-white text-sm">Save & Test</button>
+              {quartzIntegration && <button onClick={() => setEditingQuartz(false)} className="px-3 py-1.5 bg-neutral-600 hover:bg-neutral-500 rounded text-white text-sm">Cancel</button>}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* NEXX Section */}
       <div>
-        <h3 className="text-neutral-300 font-medium mb-2">NEXX (REST API)</h3>
-        <div className="flex gap-2">
-          <input value={nexxHost} onChange={(e) => setNexxHost(e.target.value)} placeholder="IP address" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm" />
-          <input value={nexxKey} onChange={(e) => setNexxKey(e.target.value)} placeholder="API Key" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm" />
-          <button onClick={saveNexx} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-white text-sm">Save & Test</button>
-        </div>
+        <h3 className="text-neutral-300 font-medium mb-2">NEXX (REST API Multiviewer)</h3>
+
+        {nexxIntegration && !editingNexx ? (
+          <div className="p-3 bg-neutral-800 border border-neutral-700 rounded space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm text-neutral-300">{nexxIntegration.host}</p>
+                <p className="text-xs text-neutral-500">API Key: {nexxIntegration.api_key ? '•••••••••' : 'Not set'}</p>
+                {nexxStatus && (
+                  <p className={`text-xs mt-1 ${nexxStatus.ok ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${nexxStatus.ok ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                    {nexxStatus.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setEditingNexx(true)} className="px-2 py-1 bg-neutral-700 hover:bg-neutral-600 rounded text-xs text-white">Edit</button>
+                <button onClick={() => deleteIntegration('nexx')} className="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">Delete</button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input value={nexxHost} onChange={(e) => setNexxHost(e.target.value)} placeholder="IP address" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm" />
+            <input value={nexxKey} onChange={(e) => setNexxKey(e.target.value)} placeholder="API Key" className="px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-sm" />
+            <button onClick={saveNexx} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded text-white text-sm">Save & Test</button>
+            {nexxIntegration && <button onClick={() => setEditingNexx(false)} className="px-3 py-1.5 bg-neutral-600 hover:bg-neutral-500 rounded text-white text-sm">Cancel</button>}
+          </div>
+        )}
       </div>
-      {status && <p className="text-amber-400 text-sm">{status}</p>}
     </div>
   )
 }
 
 function StatusTab() {
   const [status, setStatus] = useState<any>(null)
+  const [refreshResult, setRefreshResult] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => { api.systemStatus().then(setStatus).catch(() => {}) }, [])
 
+  const doRefresh = async () => {
+    setLoading(true)
+    setError('')
+    setRefreshResult(null)
+    try {
+      const result = await api.refresh()
+      setRefreshResult(result)
+      api.systemStatus().then(setStatus)
+    } catch (err: any) {
+      setError(err.message || 'Refresh failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div>
-      <h3 className="text-neutral-300 font-medium mb-2">System Status</h3>
-      {status ? (
-        <p className="text-neutral-400 text-sm">Last refresh: {status.last_refresh ?? 'Never'}</p>
-      ) : (
-        <p className="text-neutral-500 text-sm">Loading...</p>
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-neutral-300 font-medium mb-2">System Status</h3>
+        {status ? (
+          <p className="text-neutral-400 text-sm">Last refresh: {status.last_refresh ?? 'Never'}</p>
+        ) : (
+          <p className="text-neutral-500 text-sm">Loading...</p>
+        )}
+      </div>
+
+      <div>
+        <button
+          onClick={doRefresh}
+          disabled={loading}
+          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-neutral-600 disabled:cursor-not-allowed rounded text-white text-sm"
+        >
+          {loading ? 'Refreshing...' : 'Refresh State from Equipment'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-900/20 border border-red-700 rounded">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
+
+      {refreshResult && (
+        <div className="space-y-2">
+          <h4 className="text-neutral-300 font-medium text-sm">Refresh Results:</h4>
+
+          {refreshResult.nexx && (
+            <div className={`p-3 rounded border ${refreshResult.nexx.error ? 'bg-red-900/20 border-red-700' : 'bg-green-900/20 border-green-700'}`}>
+              <p className="text-sm font-medium text-neutral-300">NEXX API</p>
+              {refreshResult.nexx.error ? (
+                <p className="text-red-400 text-xs mt-1">{refreshResult.nexx.error}</p>
+              ) : (
+                <p className="text-green-400 text-xs mt-1">✓ Synced {refreshResult.nexx.mvs_synced} multiviewers</p>
+              )}
+            </div>
+          )}
+
+          {refreshResult.quartz && (
+            <div className={`p-3 rounded border ${refreshResult.quartz.error ? 'bg-red-900/20 border-red-700' : 'bg-green-900/20 border-green-700'}`}>
+              <p className="text-sm font-medium text-neutral-300">Quartz TCP</p>
+              {refreshResult.quartz.error ? (
+                <p className="text-red-400 text-xs mt-1">{refreshResult.quartz.error}</p>
+              ) : (
+                <p className="text-green-400 text-xs mt-1">✓ Synced {refreshResult.quartz.sources_synced} sources, {refreshResult.quartz.routes_synced} routes</p>
+              )}
+            </div>
+          )}
+
+          {refreshResult.errors && refreshResult.errors.length > 0 && (
+            <div className="p-3 bg-yellow-900/20 border border-yellow-700 rounded">
+              <p className="text-sm font-medium text-yellow-400">Warnings:</p>
+              {refreshResult.errors.map((err: string, i: number) => (
+                <p key={i} className="text-yellow-400 text-xs mt-1">• {err}</p>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

@@ -8,6 +8,8 @@ class IntegrationRequest(BaseModel):
     api_key: str | None = None
     jwt_username: str | None = None
     jwt_password: str | None = None
+    max_inputs: int | None = None
+    max_outputs: int | None = None
 
 
 class IntegrationResponse(BaseModel):
@@ -17,3 +19,5 @@ class IntegrationResponse(BaseModel):
     port: int | None
     api_key: str | None
     has_jwt: bool
+    max_inputs: int | None
+    max_outputs: int | None

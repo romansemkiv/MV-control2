@@ -11,6 +11,6 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ .
 COPY --from=frontend-build /app/frontend/dist /app/static
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 EXPOSE 8000
 CMD ["./entrypoint.sh"]

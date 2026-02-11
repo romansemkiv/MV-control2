@@ -1,4 +1,7 @@
 import socket
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class QuartzError(Exception):
@@ -6,12 +9,13 @@ class QuartzError(Exception):
 
 
 class QuartzClient:
-    def __init__(self, host: str, port: int = 6543, timeout: float = 3.0):
+    def __init__(self, host: str, port: int = 6543, timeout: float = 1.0):
         self.host = host
         self.port = port
         self.timeout = timeout
 
     def _send(self, command: str) -> str:
+        logger.debug(f"[Quartz] CMD: {command}")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(self.timeout)
             sock.connect((self.host, self.port))
@@ -27,7 +31,9 @@ class QuartzClient:
                         break
                 except socket.timeout:
                     break
-        return data.decode("ascii").strip()
+        response = data.decode("ascii").strip()
+        logger.debug(f"[Quartz] RSP: {response}")
+        return response
 
     def read_input_name(self, input_number: int) -> str:
         response = self._send(f".RD{input_number}")

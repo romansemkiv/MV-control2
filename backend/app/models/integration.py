@@ -15,4 +15,6 @@ class Integration(Base):
     port: Mapped[int | None] = mapped_column(nullable=True)
     api_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     jwt_credentials: Mapped[str | None] = mapped_column(Text, nullable=True)
+    max_inputs: Mapped[int | None] = mapped_column(nullable=True)
+    max_outputs: Mapped[int | None] = mapped_column(nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
