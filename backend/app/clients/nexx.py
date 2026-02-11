@@ -12,9 +12,7 @@ class NEXXError(Exception):
 
 class NEXXClient:
     def __init__(self, host: str, api_key: str | None = None, jwt: str | None = None):
-        # Remove trailing slash from host if present
         host = host.rstrip('/')
-        # Remove http:// or https:// if present
         if host.startswith('http://'):
             host = host[7:]
         elif host.startswith('https://'):
@@ -22,6 +20,7 @@ class NEXXClient:
         self.base_url = f"http://{host}/v.api/apis"
         self.api_key = api_key
         self.jwt = jwt
+        self._client = httpx.Client(timeout=10, verify=False, follow_redirects=False)
         logger.info(f"[NEXX] Initialized with base_url: {self.base_url}")
 
     def _headers(self) -> dict:
@@ -36,7 +35,7 @@ class NEXXClient:
         url = f"{self.base_url}/EV/GET/parameter/{varid}"
         logger.debug(f"[NEXX] GET {url}")
         try:
-            r = httpx.get(url, headers=self._headers(), timeout=10, follow_redirects=False, verify=False)
+            r = self._client.get(url, headers=self._headers())
             r.raise_for_status()
             data = r.json()
             logger.debug(f"[NEXX] Response: {data}")
@@ -62,7 +61,7 @@ class NEXXClient:
         url = f"{self.base_url}/EV/GET/parameters/{joined}"
         logger.debug(f"[NEXX] GET {url}")
         try:
-            r = httpx.get(url, headers=self._headers(), timeout=10, follow_redirects=False, verify=False)
+            r = self._client.get(url, headers=self._headers())
             r.raise_for_status()
             data = r.json()
             logger.debug(f"[NEXX] Response: {data}")
@@ -91,7 +90,7 @@ class NEXXClient:
         url = f"{self.base_url}/EV/SET/parameter/{varid}/{encoded_value}"
         logger.info(f"[NEXX] SET {varid} = {value}")
         try:
-            r = httpx.get(url, headers=self._headers(), timeout=10, follow_redirects=False, verify=False)
+            r = self._client.get(url, headers=self._headers())
             r.raise_for_status()
             data = r.json()
             logger.debug(f"[NEXX] Response: {data}")
@@ -107,7 +106,7 @@ class NEXXClient:
         url = f"{self.base_url}/EV/SET/parameters/{joined_ids}/{joined_vals}"
         logger.info(f"[NEXX] SET batch: {len(varids)} parameters")
         try:
-            r = httpx.get(url, headers=self._headers(), timeout=10, follow_redirects=False, verify=False)
+            r = self._client.get(url, headers=self._headers())
             r.raise_for_status()
             data = r.json()
             logger.debug(f"[NEXX] Response: {data}")
@@ -121,7 +120,7 @@ class NEXXClient:
         import base64, json
         creds = json.dumps({"username": username, "password": password})
         b64 = base64.b64encode(creds.encode()).decode()
-        r = httpx.get(f"{self.base_url}/BT/JWTCREATE/{b64}", timeout=10, follow_redirects=False, verify=False)
+        r = self._client.get(f"{self.base_url}/BT/JWTCREATE/{b64}")
         data = r.json()
         if data.get("status") != "success":
             raise NEXXError(f"JWT creation failed: {data}")
@@ -131,7 +130,7 @@ class NEXXClient:
     def jwt_refresh(self) -> str:
         if not self.jwt:
             raise NEXXError("No JWT to refresh")
-        r = httpx.get(f"{self.base_url}/BT/JWTREFRESH/{self.jwt}", timeout=10, follow_redirects=False, verify=False)
+        r = self._client.get(f"{self.base_url}/BT/JWTREFRESH/{self.jwt}")
         data = r.json()
         if data.get("status") != "success":
             raise NEXXError(f"JWT refresh failed: {data}")

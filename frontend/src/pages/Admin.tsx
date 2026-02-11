@@ -405,12 +405,31 @@ function StatusTab() {
           <h4 className="text-neutral-300 font-medium text-sm">Refresh Results:</h4>
 
           {refreshResult.nexx && (
-            <div className={`p-3 rounded border ${refreshResult.nexx.error ? 'bg-red-900/20 border-red-700' : 'bg-green-900/20 border-green-700'}`}>
+            <div className={`p-3 rounded border ${
+              refreshResult.nexx.error || (refreshResult.nexx.errors?.length > 0)
+                ? 'bg-red-900/20 border-red-700'
+                : 'bg-green-900/20 border-green-700'
+            }`}>
               <p className="text-sm font-medium text-neutral-300">NEXX API</p>
               {refreshResult.nexx.error ? (
                 <p className="text-red-400 text-xs mt-1">{refreshResult.nexx.error}</p>
               ) : (
-                <p className="text-green-400 text-xs mt-1">✓ Synced {refreshResult.nexx.mvs_synced} multiviewers</p>
+                <>
+                  <p className={`text-xs mt-1 ${refreshResult.nexx.errors?.length > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+                    Synced {refreshResult.nexx.mvs_synced} multiviewers
+                    {refreshResult.nexx.errors?.length > 0 && ` (${refreshResult.nexx.errors.length} errors)`}
+                  </p>
+                  {refreshResult.nexx.errors?.length > 0 && (
+                    <div className="mt-2 max-h-32 overflow-y-auto">
+                      {refreshResult.nexx.errors.slice(0, 5).map((err: string, i: number) => (
+                        <p key={i} className="text-red-400 text-xs">• {err}</p>
+                      ))}
+                      {refreshResult.nexx.errors.length > 5 && (
+                        <p className="text-red-400 text-xs">...and {refreshResult.nexx.errors.length - 5} more</p>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

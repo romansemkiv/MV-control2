@@ -121,6 +121,7 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
 
             results["mvs_synced"] += 1
         except Exception as e:
+            logger.error(f"[NEXX Sync] Failed to sync MV {mv_idx}: {e}", exc_info=True)
             results["errors"].append(f"MV {mv_idx}: {e}")
 
     db.commit()
@@ -128,24 +129,22 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
 
 
 def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx: int):
-    """Sync all 16 windows for one MV using batched requests (4 requests total instead of 64)"""
     import logging
     logger = logging.getLogger(__name__)
-    logger.debug(f"[NEXX Sync] Batching window params for MV {mv_idx} (4 requests for 16 windows)")
 
-    # 1. Batch fetch all PCM bars for all 16 windows (1 request)
     pcm_varids = [f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}" for win_idx in range(16)]
     pcm_params = nexx.get_parameters(pcm_varids)
 
-    # 2. Batch fetch all UMD parameters for all windows, grouped by layer (3 requests)
-    umd_params_by_layer = {}
+    # NEXX API limit: max 40 params per request. 10 UMD VarIDs × 4 windows = 40.
+    umd_params_by_layer = {0: {}, 1: {}, 2: {}}
     for layer in range(3):
-        # Fetch all UMD parameters for all windows for this layer
-        varids = []
-        for win_idx in range(16):
-            for vid in UMD_VARIDS:
-                varids.append(f"{vid}.{mv_idx}.{win_idx}.{layer}")
-        umd_params_by_layer[layer] = nexx.get_parameters(varids)
+        for group_start in range(0, 16, 4):
+            varids = []
+            for win_idx in range(group_start, group_start + 4):
+                for vid in UMD_VARIDS:
+                    varids.append(f"{vid}.{mv_idx}.{win_idx}.{layer}")
+            chunk_result = nexx.get_parameters(varids)
+            umd_params_by_layer[layer].update(chunk_result)
 
     # 3. Process and save all windows
     for win_idx in range(16):
