@@ -34,7 +34,7 @@ export const useMVStore = create<MVState>((set) => ({
   },
   selectMV: async (id) => {
     const mv = await api.getMultiviewer(id)
-    set({ currentMV: mv, selectedWindow: null })
+    set({ currentMV: mv })
   },
   selectWindow: (index) => set({ selectedWindow: index }),
 }))

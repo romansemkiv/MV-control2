@@ -10,7 +10,7 @@ from app.models.multiviewer import Multiviewer, UserAccessMV
 from app.models.state import StateMV, StateWindow
 from app.schemas.mv import MultiviewerResponse, MVStateResponse, SetLayoutRequest, SetWindowRequest
 from app.services.integration import get_nexx_client
-from app.services.state import VARID_MV_LAYOUT, VARID_PCM_BARS, UMD_VARIDS
+from app.services.state import VARID_MV_LAYOUT, VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index
 
 router = APIRouter(prefix="/api/multiviewers", tags=["multiviewers"])
 
@@ -94,7 +94,8 @@ def set_window(mv_id: int, window_index: int, body: SetWindowRequest, user: User
         raise HTTPException(status_code=503, detail="NEXX not configured")
 
     if body.pcm_bars is not None:
-        nexx.set_parameter(f"{VARID_PCM_BARS}.{mv.nexx_index}.{window_index}", str(body.pcm_bars))
+        pcm_index = pcm_value_to_index(body.pcm_bars)
+        nexx.set_parameter(f"{VARID_PCM_BARS}.{mv.nexx_index}.{window_index}", str(pcm_index))
 
     if body.umd is not None:
         for layer_idx, layer_data in enumerate(body.umd):

@@ -53,7 +53,7 @@ def apply_preset(preset_id: int, user: User = Depends(get_current_user), db: Ses
         raise HTTPException(status_code=404, detail="Preset not found")
 
     from app.services.integration import get_nexx_client
-    from app.services.state import VARID_MV_LAYOUT, VARID_MV_FONT, VARID_MV_OUTER_BORDER, VARID_MV_INNER_BORDER, VARID_PCM_BARS, UMD_VARIDS
+    from app.services.state import VARID_MV_LAYOUT, VARID_MV_FONT, VARID_MV_OUTER_BORDER, VARID_MV_INNER_BORDER, VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index
 
     nexx = get_nexx_client(db)
     if not nexx:
@@ -80,7 +80,8 @@ def apply_preset(preset_id: int, user: User = Depends(get_current_user), db: Ses
         if win_idx is None:
             continue
         if "pcm_bars" in win:
-            nexx.set_parameter(f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}", str(win["pcm_bars"]))
+            pcm_index = pcm_value_to_index(win["pcm_bars"])
+            nexx.set_parameter(f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}", str(pcm_index))
         for layer_idx, layer_data in enumerate(win.get("umd", [])):
             for varid_base, value in layer_data.items():
                 if varid_base in UMD_VARIDS:

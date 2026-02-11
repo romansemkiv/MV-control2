@@ -33,6 +33,19 @@ UMD_VARIDS = [
     VARID_UMD_TEXT_SIZE, VARID_UMD_PADDING,
 ]
 
+PCM_BARS_VALUES = [0, 2, 4, 6, 8, 12, 16]
+PCM_BARS_TO_INDEX = {0: 0, 2: 1, 4: 2, 6: 3, 8: 4, 12: 5, 16: 6}
+
+
+def pcm_index_to_value(index: int) -> int:
+    if 0 <= index < len(PCM_BARS_VALUES):
+        return PCM_BARS_VALUES[index]
+    return 0
+
+
+def pcm_value_to_index(value: int) -> int:
+    return PCM_BARS_TO_INDEX.get(value, 0)
+
 
 def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
     import logging
@@ -169,7 +182,8 @@ def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx:
             db.add(state)
             state_win_by_key[key] = state
 
-        state.pcm_bars = int(pcm_param) if pcm_param not in (None, "") else 0
+        pcm_index = int(pcm_param) if pcm_param not in (None, "") else 0
+        state.pcm_bars = pcm_index_to_value(pcm_index)
         state.umd_json = json.dumps(umd_data)
         state.updated_at = now
 
