@@ -27,6 +27,12 @@ function Main() {
     loadRouting()
   }, [])
 
+  useEffect(() => {
+    if (multiviewers.length > 0 && !currentMV) {
+      selectMV(multiviewers[0].id)
+    }
+  }, [multiviewers])
+
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
@@ -47,6 +53,15 @@ function Main() {
 
   const layout = currentMV ? getLayoutById((currentMV.layout ?? 0) + 1) : null
   const selectedWindowData = currentMV?.windows?.find((w: any) => w.window_index === selectedWindow)
+
+  if (selectedWindow !== null && currentMV) {
+    console.log('Debug Window Inspector:', {
+      selectedWindow,
+      windows: currentMV.windows,
+      selectedWindowData,
+      windowsLength: currentMV.windows?.length
+    })
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -119,18 +134,23 @@ function Main() {
                 selectedWindow={selectedWindow}
                 onSelectWindow={selectWindow}
                 mvNexxIndex={currentMV.nexx_index}
+                sources={sources}
+                routing={routing}
               />
             )}
-            {selectedWindow !== null && selectedWindowData && (
+            {selectedWindow !== null && (
               <div className="w-full max-w-2xl">
                 <WindowInspector
                   mvId={currentMV.id}
                   windowIndex={selectedWindow}
-                  windowData={selectedWindowData}
+                  windowData={selectedWindowData || { window_index: selectedWindow, pcm_bars: 0, umd: [] }}
                   sources={sources}
                   mvNexxIndex={currentMV.nexx_index}
                   routing={routing}
-                  onUpdate={() => selectMV(currentMV.id)}
+                  onUpdate={() => {
+                    selectMV(currentMV.id)
+                    loadRouting()
+                  }}
                 />
               </div>
             )}
