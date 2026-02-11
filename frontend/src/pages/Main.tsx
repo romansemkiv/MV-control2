@@ -40,12 +40,12 @@ function Main() {
 
   const handleSelectLayout = async (layoutId: number) => {
     if (!currentMV) return
-    await api.setLayout(currentMV.id, layoutId)
+    await api.setLayout(currentMV.id, layoutId - 1)
     await selectMV(currentMV.id)
     setShowLayoutModal(false)
   }
 
-  const layout = currentMV ? getLayoutById(currentMV.layout ?? 1) : null
+  const layout = currentMV ? getLayoutById((currentMV.layout ?? 0) + 1) : null
   const selectedWindowData = currentMV?.windows?.find((w: any) => w.window_index === selectedWindow)
 
   const handleLogout = async () => {
@@ -75,7 +75,7 @@ function Main() {
                 onClick={() => setShowLayoutModal(true)}
                 className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm"
               >
-                Layout: {currentMV.layout ?? '?'}
+                Layout: {currentMV.layout != null ? currentMV.layout + 1 : '?'}
               </button>
               <span className="text-neutral-500 text-sm">Font: {currentMV.font ?? '-'}</span>
               <span className="text-neutral-500 text-sm">Border: {currentMV.outer_border ?? '-'}/{currentMV.inner_border ?? '-'}</span>

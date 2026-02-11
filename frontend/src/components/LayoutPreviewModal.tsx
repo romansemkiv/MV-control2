@@ -17,25 +17,25 @@ function LayoutPreviewModal({ onSelect, onClose }: Props) {
               onClick={() => onSelect(layout.id)}
               className="cursor-pointer border border-neutral-600 rounded p-1 hover:border-amber-500 transition-colors"
             >
-              <svg viewBox="0 0 100 100" className="w-full bg-neutral-950 rounded">
+              <svg viewBox="0 0 160 90" className="w-full bg-neutral-950 rounded">
                 {layout.windows.map((win) => (
                   <g key={win.id}>
                     <rect
-                      x={win.x * 100}
-                      y={win.y * 100}
-                      width={win.w * 100}
-                      height={win.h * 100}
+                      x={win.x * 160}
+                      y={win.y * 90}
+                      width={win.w * 160}
+                      height={win.h * 90}
                       fill="#1c1917"
                       stroke="#525252"
                       strokeWidth={0.5}
                     />
                     <text
-                      x={win.x * 100 + (win.w * 100) / 2}
-                      y={win.y * 100 + (win.h * 100) / 2}
+                      x={win.x * 160 + (win.w * 160) / 2}
+                      y={win.y * 90 + (win.h * 90) / 2}
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="#a3a3a3"
-                      fontSize={Math.min(win.w, win.h) * 20}
+                      fontSize={Math.min(win.w * 160, win.h * 90) * 0.35}
                     >
                       {win.id}
                     </text>

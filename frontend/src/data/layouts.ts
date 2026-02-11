@@ -14,7 +14,7 @@ export interface Layout {
 
 export const layouts: Layout[] = [
   // Layout 1: 2x2
-  { id: 1, name: "2x2", windows: [
+  { id: 1, name: "Layout 1", windows: [
     { id: 1, x: 0, y: 0, w: 0.5, h: 0.5 },
     { id: 2, x: 0.5, y: 0, w: 0.5, h: 0.5 },
     { id: 3, x: 0, y: 0.5, w: 0.5, h: 0.5 },
@@ -22,7 +22,7 @@ export const layouts: Layout[] = [
   ]},
 
   // Layout 2: 4x4 (16 windows)
-  { id: 2, name: "4x4", windows: [
+  { id: 2, name: "Layout 2", windows: [
     { id: 1, x: 0, y: 0, w: 0.25, h: 0.25 },
     { id: 2, x: 0.25, y: 0, w: 0.25, h: 0.25 },
     { id: 3, x: 0.5, y: 0, w: 0.25, h: 0.25 },
@@ -41,7 +41,6 @@ export const layouts: Layout[] = [
     { id: 16, x: 0.75, y: 0.75, w: 0.25, h: 0.25 },
   ]},
 
-  // Layout 3: 3x3 (9 windows)
     // Layout 3: Layout 3
   { id: 3, name: "Layout 3", windows: [
     { id: 1, x: 0.25, y: 0.25, w: 0.5, h: 0.5 },
@@ -59,7 +58,6 @@ export const layouts: Layout[] = [
     { id: 13, x: 0.75, y: 0.75, w: 0.25, h: 0.25 },
   ]},
 
-  // Layout 4: 1 window
     // Layout 4: Layout 4
   { id: 4, name: "Layout 4", windows: [
     { id: 1, x: 0.5, y: 0, w: 0.5, h: 0.5 },
@@ -130,7 +128,7 @@ export const layouts: Layout[] = [
   ]},
 
   // Layout 10: Layout 10
-  { id: 9, name: "Layout 10", windows: [
+  { id: 10, name: "Layout 10", windows: [
     { id: 1, x: 0, y: 0, w: 0.5, h: 0.5 },
     { id: 2, x: 0.5, y: 0.25, w: 0.5, h: 0.5 },
     { id: 3, x: 0, y: 0.5, w: 0.5, h: 0.5 },
@@ -477,29 +475,9 @@ export const layouts: Layout[] = [
     { id: 13, x: 0.75, y: 0.75, w: 0.25, h: 0.25 },
   ]},
 
-  // Layout 34: 13 windows variant
-  { id: 34, name: "13mix2", windows: [
-    { id: 1, x: 0.5, y: 0, w: 0.5, h: 0.333 },
-    { id: 2, x: 0, y: 0, w: 0.25, h: 0.167 },
-    { id: 3, x: 0.25, y: 0, w: 0.25, h: 0.167 },
-    { id: 4, x: 0, y: 0.167, w: 0.25, h: 0.166 },
-    { id: 5, x: 0.25, y: 0.167, w: 0.25, h: 0.166 },
-    { id: 6, x: 0, y: 0.333, w: 0.25, h: 0.167 },
-    { id: 7, x: 0.25, y: 0.333, w: 0.25, h: 0.167 },
-    { id: 8, x: 0.5, y: 0.333, w: 0.25, h: 0.167 },
-    { id: 9, x: 0.75, y: 0.333, w: 0.25, h: 0.167 },
-    { id: 10, x: 0, y: 0.5, w: 0.25, h: 0.25 },
-    { id: 11, x: 0.25, y: 0.5, w: 0.25, h: 0.25 },
-    { id: 12, x: 0.5, y: 0.5, w: 0.25, h: 0.25 },
-    { id: 13, x: 0.75, y: 0.5, w: 0.25, h: 0.25 },
-    { id: 14, x: 0, y: 0.75, w: 0.25, h: 0.25 },
-    { id: 15, x: 0.25, y: 0.75, w: 0.25, h: 0.25 },
-    { id: 16, x: 0.5, y: 0.75, w: 0.25, h: 0.25 },
-  ]},
-
-  // Layout 35: 13 windows third variant
-  { id: 35, name: "13mix3", windows: [
-    { id: 1, x: 0, y: 0.5, w: 0.5, h: 0.5 },
+    // Layout 34: Layout 34
+  { id: 34, name: "Layout 34", windows: [
+    { id: 1, x: 0.25, y: 0.5, w: 0.5, h: 0.5 },
     { id: 2, x: 0, y: 0, w: 0.25, h: 0.25 },
     { id: 3, x: 0.25, y: 0, w: 0.25, h: 0.25 },
     { id: 4, x: 0.5, y: 0, w: 0.25, h: 0.25 },
@@ -508,12 +486,27 @@ export const layouts: Layout[] = [
     { id: 7, x: 0.25, y: 0.25, w: 0.25, h: 0.25 },
     { id: 8, x: 0.5, y: 0.25, w: 0.25, h: 0.25 },
     { id: 9, x: 0.75, y: 0.25, w: 0.25, h: 0.25 },
-    { id: 10, x: 0.5, y: 0.5, w: 0.25, h: 0.167 },
-    { id: 11, x: 0.75, y: 0.5, w: 0.25, h: 0.167 },
-    { id: 12, x: 0.5, y: 0.667, w: 0.25, h: 0.166 },
-    { id: 13, x: 0.75, y: 0.667, w: 0.25, h: 0.166 },
-    { id: 14, x: 0.5, y: 0.833, w: 0.25, h: 0.167 },
-    { id: 15, x: 0.75, y: 0.833, w: 0.25, h: 0.167 },
+    { id: 10, x: 0, y: 0.5, w: 0.25, h: 0.25 },
+    { id: 11, x: 0.75, y: 0.5, w: 0.25, h: 0.25 },
+    { id: 12, x: 0, y: 0.75, w: 0.25, h: 0.25 },
+    { id: 13, x: 0.75, y: 0.75, w: 0.25, h: 0.25 },
+  ]},
+
+  // Layout 35: Layout 35
+  { id: 35, name: "Layout 35", windows: [
+    { id: 1, x: 0, y: 0.25, w: 0.5, h: 0.5 },
+    { id: 2, x: 0, y: 0, w: 0.25, h: 0.25 },
+    { id: 3, x: 0.25, y: 0, w: 0.25, h: 0.25 },
+    { id: 4, x: 0.5, y: 0, w: 0.25, h: 0.25 },
+    { id: 5, x: 0.75, y: 0, w: 0.25, h: 0.25 },
+    { id: 6, x: 0.5, y: 0.25, w: 0.25, h: 0.25 },
+    { id: 7, x: 0.75, y: 0.25, w: 0.25, h: 0.25 },
+    { id: 8, x: 0.5, y: 0.5, w: 0.25, h: 0.25 },
+    { id: 9, x: 0.75, y: 0.5, w: 0.25, h: 0.25 },
+    { id: 10, x: 0, y: 0.75, w: 0.25, h: 0.25 },
+    { id: 11, x: 0.25, y: 0.75, w: 0.25, h: 0.25 },
+    { id: 12, x: 0.5, y: 0.75, w: 0.25, h: 0.25 },
+    { id: 13, x: 0.75, y: 0.75, w: 0.25, h: 0.25 },
   ]},
 
   // Layout 36: 3x3 (9 windows)
@@ -529,42 +522,48 @@ export const layouts: Layout[] = [
     { id: 9, x: 0.667, y: 0.667, w: 0.333, h: 0.333 },
   ]},
 
-  // Layout 37: 4x1 (4 windows horizontal)
-  { id: 37, name: "4x1", windows: [
-    { id: 1, x: 0, y: 0, w: 0.25, h: 1 },
-    { id: 2, x: 0.25, y: 0, w: 0.25, h: 1 },
-    { id: 3, x: 0.5, y: 0, w: 0.25, h: 1 },
-    { id: 4, x: 0.75, y: 0, w: 0.25, h: 1 },
-  ]},
-
-  // Layout 38: 1x4 (4 windows vertical)
-  { id: 38, name: "1x4", windows: [
-    { id: 1, x: 0, y: 0, w: 1, h: 0.25 },
-    { id: 2, x: 0, y: 0.25, w: 1, h: 0.25 },
-    { id: 3, x: 0, y: 0.5, w: 1, h: 0.25 },
-    { id: 4, x: 0, y: 0.75, w: 1, h: 0.25 },
-  ]},
-
-  // Layout 39: 3+3 (3 left, 3 right)
-  { id: 39, name: "3+3", windows: [
-    { id: 1, x: 0, y: 0, w: 0.5, h: 0.333 },
-    { id: 2, x: 0, y: 0.333, w: 0.5, h: 0.334 },
-    { id: 3, x: 0, y: 0.667, w: 0.5, h: 0.333 },
-    { id: 4, x: 0.5, y: 0, w: 0.5, h: 0.333 },
-    { id: 5, x: 0.5, y: 0.333, w: 0.5, h: 0.334 },
-    { id: 6, x: 0.5, y: 0.667, w: 0.5, h: 0.333 },
-  ]},
-
-  // Layout 40: 1+3 left (1 large left, 3 small right)
-  { id: 40, name: "1+3v", windows: [
-    { id: 1, x: 0, y: 0, w: 0.667, h: 1 },
+  // Layout 37: Layout 37
+  { id: 37, name: "Layout 37", windows: [
+    { id: 1, x: 0, y: 0, w: 0.667, h: 0.667 },
     { id: 2, x: 0.667, y: 0, w: 0.333, h: 0.333 },
     { id: 3, x: 0.667, y: 0.333, w: 0.333, h: 0.334 },
-    { id: 4, x: 0.667, y: 0.667, w: 0.333, h: 0.333 },
+    { id: 4, x: 0, y: 0.667, w: 0.333, h: 0.333 },
+    { id: 5, x: 0.333, y: 0.667, w: 0.334, h: 0.333 },
+    { id: 6, x: 0.667, y: 0.667, w: 0.333, h: 0.333 },
+  ]},
+
+  // Layout 38: Layout 38
+  { id: 38, name: "Layout 38", windows: [
+    { id: 1, x: 0.333, y: 0, w: 0.667, h: 0.667 },
+    { id: 2, x: 0, y: 0, w: 0.333, h: 0.333 },
+    { id: 3, x: 0, y: 0.333, w: 0.333, h: 0.334 },
+    { id: 4, x: 0, y: 0.667, w: 0.333, h: 0.333 },
+    { id: 5, x: 0.333, y: 0.667, w: 0.334, h: 0.333 },
+    { id: 6, x: 0.667, y: 0.667, w: 0.333, h: 0.333 },
+  ]},
+
+  // Layout 39: Layout 39
+  { id: 39, name: "Layout 39", windows: [
+    { id: 1, x: 0, y: 0.333, w: 0.667, h: 0.667 },
+    { id: 2, x: 0, y: 0, w: 0.333, h: 0.333 },
+    { id: 3, x: 0.333, y: 0, w: 0.334, h: 0.333 },
+    { id: 4, x: 0.667, y: 0, w: 0.333, h: 0.333 },
+    { id: 5, x: 0.667, y: 0.333, w: 0.333, h: 0.334 },
+    { id: 6, x: 0.667, y: 0.667, w: 0.333, h: 0.333 },
+  ]},
+
+  // Layout 40: Layout 40
+  { id: 40, name: "Layout 40", windows: [
+    { id: 1, x: 0.333, y: 0.333, w: 0.667, h: 0.667 },
+    { id: 2, x: 0, y: 0, w: 0.333, h: 0.333 },
+    { id: 3, x: 0.333, y: 0, w: 0.334, h: 0.333 },
+    { id: 4, x: 0.667, y: 0, w: 0.333, h: 0.333 },
+    { id: 5, x: 0, y: 0.333, w: 0.333, h: 0.334 },
+    { id: 6, x: 0, y: 0.667, w: 0.333, h: 0.333 },
   ]},
 
   // Layout 41: 4x3 (12 windows)
-  { id: 41, name: "4x3", windows: [
+  { id: 41, name: "Layout 41", windows: [
     { id: 1, x: 0, y: 0, w: 0.25, h: 0.333 },
     { id: 2, x: 0.25, y: 0, w: 0.25, h: 0.333 },
     { id: 3, x: 0.5, y: 0, w: 0.25, h: 0.333 },
@@ -580,7 +579,7 @@ export const layouts: Layout[] = [
   ]},
 
   // Layout 42: 3x2 (6 windows)
-  { id: 42, name: "3x2", windows: [
+  { id: 42, name: "Layout 42", windows: [
     { id: 1, x: 0, y: 0, w: 0.333, h: 0.5 },
     { id: 2, x: 0.333, y: 0, w: 0.334, h: 0.5 },
     { id: 3, x: 0.667, y: 0, w: 0.333, h: 0.5 },
@@ -589,10 +588,10 @@ export const layouts: Layout[] = [
     { id: 6, x: 0.667, y: 0.5, w: 0.333, h: 0.5 },
   ]},
 
-  // Layout 43: 1x2 (2 windows vertical)
-  { id: 43, name: "1x2", windows: [
-    { id: 1, x: 0, y: 0, w: 1, h: 0.5 },
-    { id: 2, x: 0, y: 0.5, w: 1, h: 0.5 },
+  // Layout 43: Layout 43
+  { id: 43, name: "Layout 43", windows: [
+    { id: 1, x: 0.001, y: 0.001, w: 0.499, h: 0.991 },
+    { id: 2, x: 0.500, y: 0.001, w: 0.499, h: 0.991 },
   ]},
 ]
 

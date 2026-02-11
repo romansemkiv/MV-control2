@@ -15,39 +15,39 @@ interface Props {
 
 function LayoutCanvas({ windows, selectedWindow, onSelectWindow, mvNexxIndex }: Props) {
   return (
-    <svg viewBox="0 0 1000 1000" className="w-full max-w-2xl border border-neutral-600 rounded bg-neutral-950">
+    <svg viewBox="0 0 1600 900" className="w-full max-w-2xl border border-neutral-600 rounded bg-neutral-950">
       {windows.map((win) => {
         const output = mvNexxIndex * 16 + win.id
         const isSelected = selectedWindow === win.id - 1
         return (
           <g key={win.id} onClick={() => onSelectWindow(win.id - 1)} className="cursor-pointer">
             <rect
-              x={win.x * 1000}
-              y={win.y * 1000}
-              width={win.w * 1000}
-              height={win.h * 1000}
+              x={win.x * 1600}
+              y={win.y * 900}
+              width={win.w * 1600}
+              height={win.h * 900}
               fill={isSelected ? '#44403c' : '#1c1917'}
               stroke={isSelected ? '#f59e0b' : '#525252'}
               strokeWidth={isSelected ? 3 : 1}
             />
             <text
-              x={win.x * 1000 + (win.w * 1000) / 2}
-              y={win.y * 1000 + (win.h * 1000) / 2 - 8}
+              x={win.x * 1600 + (win.w * 1600) / 2}
+              y={win.y * 900 + (win.h * 900) / 2 - 20}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#e5e5e5"
-              fontSize={Math.min(win.w, win.h) * 120}
+              fontSize={Math.min(win.w * 1600, win.h * 900) * 0.25}
               fontWeight="bold"
             >
               {win.id}
             </text>
             <text
-              x={win.x * 1000 + (win.w * 1000) / 2}
-              y={win.y * 1000 + (win.h * 1000) / 2 + 18}
+              x={win.x * 1600 + (win.w * 1600) / 2}
+              y={win.y * 900 + (win.h * 900) / 2 + 50}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#737373"
-              fontSize={Math.min(win.w, win.h) * 60}
+              fontSize={Math.min(win.w * 1600, win.h * 900) * 0.08}
             >
               out {output}
             </text>
