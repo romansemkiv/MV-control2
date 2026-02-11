@@ -45,18 +45,26 @@ def login(body: LoginRequest, response: Response, db: Session = Depends(get_db))
         httponly=True,
         samesite="lax",
         max_age=86400,
+        path="/",
+        secure=False,  # Set to True if using HTTPS
     )
     return {"id": user.id, "login": user.login, "role": user.role}
 
 
 @router.post("/logout")
-def logout(request: Request, _user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def logout(response: Response, request: Request, _user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     token = request.cookies.get("session_token")
     if token:
         delete_session(db, token)
-    response = Response(status_code=200)
-    response.delete_cookie("session_token")
-    return response
+
+    # Delete cookie with same params as set_cookie
+    response.delete_cookie(
+        key="session_token",
+        path="/",
+        httponly=True,
+        samesite="lax"
+    )
+    return {"status": "logged out"}
 
 
 @router.get("/me", response_model=UserResponse)
