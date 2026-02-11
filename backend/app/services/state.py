@@ -183,11 +183,12 @@ def refresh_quartz_state(db: Session, quartz: QuartzClient, max_sources: int, ma
     logger = logging.getLogger(__name__)
     results = {"sources_synced": 0, "routes_synced": 0, "errors": []}
 
-    # Parallel fetch of input names (max 10 concurrent connections)
-    logger.info(f"[Quartz Sync] Fetching {max_sources} input names...")
+    # Parallel fetch of source names (max 10 concurrent connections)
+    # NOTE: Quartz server has RD/RS swapped - use read_output_name to get actual sources
+    logger.info(f"[Quartz Sync] Fetching {max_sources} source names...")
     input_data = {}
     with ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_input = {executor.submit(quartz.read_input_name, i): i for i in range(1, max_sources + 1)}
+        future_to_input = {executor.submit(quartz.read_output_name, i): i for i in range(1, max_sources + 1)}
         for future in as_completed(future_to_input):
             i = future_to_input[future]
             try:
