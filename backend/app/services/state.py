@@ -43,7 +43,6 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
     except Exception as e:
         raise ValueError(f"Failed to connect to NEXX: {str(e)}")
 
-    # Handle both string and int responses
     if isinstance(raw_count, int):
         max_mv_count = raw_count
     elif isinstance(raw_count, str):
@@ -56,23 +55,19 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
     else:
         raise ValueError(f"NEXX returned unexpected type: {type(raw_count)}")
 
-    # Limit to reasonable max (120 is chassis total, but we only sync enabled ones)
     max_mv_count = min(max_mv_count, 120)
     logger.info(f"[NEXX Sync] Max MV count from API: {max_mv_count}")
 
     results = {"mvs_synced": 0, "errors": []}
 
-    # Query which MVs are actually enabled (VarID 2703.X)
     enabled_flags = {}
     try:
         varids = [f"{VARID_MV_ENABLE}.{idx}" for idx in range(max_mv_count)]
         enabled_params = nexx.get_parameters(varids)
-        logger.debug(f"[NEXX Sync] Enabled params response: {enabled_params}")
 
         for idx in range(max_mv_count):
             key = f"{VARID_MV_ENABLE}.{idx}"
             value = enabled_params.get(key, 0)
-            # Value could be int, str, or None
             if value is None or value == "" or value == 0 or value == "0":
                 enabled_flags[idx] = False
             else:
@@ -81,21 +76,32 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
         logger.info(f"[NEXX Sync] Enabled MVs: {[idx for idx, en in enabled_flags.items() if en]}")
     except Exception as e:
         logger.error(f"[NEXX Sync] Failed to fetch enabled flags: {e}", exc_info=True)
-        # Fallback: assume first 3 are enabled
         enabled_flags = {0: True, 1: True, 2: True}
         logger.info(f"[NEXX Sync] Using fallback enabled MVs: {[0, 1, 2]}")
 
-    for mv_idx in range(max_mv_count):
-        if not enabled_flags.get(mv_idx, False):
-            continue  # Skip disabled MVs
+    enabled_indices = [idx for idx in range(max_mv_count) if enabled_flags.get(idx, False)]
 
+    # Pre-load all DB objects (3 queries instead of 18 per MV)
+    mv_by_idx = {mv.nexx_index: mv for mv in db.query(Multiviewer).filter(
+        Multiviewer.nexx_index.in_(enabled_indices)
+    ).all()}
+    mv_ids = [mv.id for mv in mv_by_idx.values()]
+    state_mv_by_id = {s.mv_id: s for s in db.query(StateMV).filter(
+        StateMV.mv_id.in_(mv_ids)
+    ).all()} if mv_ids else {}
+    state_win_by_key = {(s.mv_id, s.window_index): s for s in db.query(StateWindow).filter(
+        StateWindow.mv_id.in_(mv_ids)
+    ).all()} if mv_ids else {}
+
+    for mv_idx in enabled_indices:
         logger.info(f"[NEXX Sync] Syncing MV {mv_idx}...")
         try:
-            mv = db.query(Multiviewer).filter(Multiviewer.nexx_index == mv_idx).first()
+            mv = mv_by_idx.get(mv_idx)
             if not mv:
                 mv = Multiviewer(nexx_index=mv_idx, label=f"MV {mv_idx + 1}", enabled=True)
                 db.add(mv)
                 db.flush()
+                mv_by_idx[mv_idx] = mv
 
             params = nexx.get_parameters([
                 f"{VARID_MV_LAYOUT}.{mv_idx}",
@@ -104,20 +110,19 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
                 f"{VARID_MV_INNER_BORDER}.{mv_idx}",
             ])
 
-            state = db.query(StateMV).filter(StateMV.mv_id == mv.id).first()
+            state = state_mv_by_id.get(mv.id)
             if not state:
                 state = StateMV(mv_id=mv.id)
                 db.add(state)
+                state_mv_by_id[mv.id] = state
 
-            # Safe int conversion (handles both int and str from API)
             state.layout = int(params.get(f"{VARID_MV_LAYOUT}.{mv_idx}", 0) or 0)
             state.font = int(params.get(f"{VARID_MV_FONT}.{mv_idx}", 0) or 0)
             state.outer_border = int(params.get(f"{VARID_MV_OUTER_BORDER}.{mv_idx}", 0) or 0)
             state.inner_border = int(params.get(f"{VARID_MV_INNER_BORDER}.{mv_idx}", 0) or 0)
             state.updated_at = datetime.now(timezone.utc)
 
-            # Batch fetch all window parameters for this MV (1 + 3 requests instead of 16 * 4 = 64)
-            _sync_all_windows_batched(db, nexx, mv.id, mv_idx)
+            _sync_all_windows_batched(db, nexx, mv.id, mv_idx, state_win_by_key)
 
             results["mvs_synced"] += 1
         except Exception as e:
@@ -128,10 +133,8 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
     return results
 
 
-def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx: int):
-    import logging
-    logger = logging.getLogger(__name__)
-
+def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx: int,
+                              state_win_by_key: dict):
     pcm_varids = [f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}" for win_idx in range(16)]
     pcm_params = nexx.get_parameters(pcm_varids)
 
@@ -146,13 +149,11 @@ def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx:
             chunk_result = nexx.get_parameters(varids)
             umd_params_by_layer[layer].update(chunk_result)
 
-    # 3. Process and save all windows
+    now = datetime.now(timezone.utc)
     for win_idx in range(16):
-        # Get PCM for this window
         pcm_key = f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}"
         pcm_param = pcm_params.get(pcm_key, 0)
 
-        # Build UMD data for this window (3 layers)
         umd_data = []
         for layer in range(3):
             umd_layer = {}
@@ -161,18 +162,16 @@ def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx:
                 umd_layer[vid] = umd_params_by_layer[layer].get(key, "")
             umd_data.append(umd_layer)
 
-        # Save to DB
-        state = db.query(StateWindow).filter(
-            StateWindow.mv_id == mv_id, StateWindow.window_index == win_idx
-        ).first()
+        key = (mv_id, win_idx)
+        state = state_win_by_key.get(key)
         if not state:
             state = StateWindow(mv_id=mv_id, window_index=win_idx)
             db.add(state)
+            state_win_by_key[key] = state
 
-        # Safe int conversion (pcm_param could be int, str, or None)
         state.pcm_bars = int(pcm_param) if pcm_param not in (None, "") else 0
         state.umd_json = json.dumps(umd_data)
-        state.updated_at = datetime.now(timezone.utc)
+        state.updated_at = now
 
 
 def refresh_quartz_state(db: Session, quartz: QuartzClient, max_sources: int, max_outputs: int) -> dict:
