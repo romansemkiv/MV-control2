@@ -13,6 +13,7 @@ from app.protocol_mappings import (
     VARID_MV_ENABLE,
     VARID_MV_LAYOUT,
     VARID_MV_FONT,
+    VARID_MV_OUTPUT_FORMAT,
     VARID_MV_OUTER_BORDER,
     VARID_MV_INNER_BORDER,
     VARID_PCM_BARS,
@@ -97,6 +98,7 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient, mv_indices: list[int] | No
             params = nexx.get_parameters([
                 f"{VARID_MV_LAYOUT}.{mv_idx}",
                 f"{VARID_MV_FONT}.{mv_idx}",
+                f"{VARID_MV_OUTPUT_FORMAT}.{mv_idx}",
                 f"{VARID_MV_OUTER_BORDER}.{mv_idx}",
                 f"{VARID_MV_INNER_BORDER}.{mv_idx}",
             ])
@@ -109,6 +111,7 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient, mv_indices: list[int] | No
 
             state.layout = int(params.get(f"{VARID_MV_LAYOUT}.{mv_idx}", 0) or 0)
             state.font = int(params.get(f"{VARID_MV_FONT}.{mv_idx}", 0) or 0)
+            state.output_format = int(params.get(f"{VARID_MV_OUTPUT_FORMAT}.{mv_idx}", 0) or 0)
             state.outer_border = int(params.get(f"{VARID_MV_OUTER_BORDER}.{mv_idx}", 0) or 0)
             state.inner_border = int(params.get(f"{VARID_MV_INNER_BORDER}.{mv_idx}", 0) or 0)
             state.updated_at = datetime.now(timezone.utc)

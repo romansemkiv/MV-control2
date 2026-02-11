@@ -22,11 +22,19 @@ class MVStateResponse(BaseModel):
     font: int | None
     outer_border: int | None
     inner_border: int | None
+    output_format: int | None
     windows: list[dict]
 
 
 class SetLayoutRequest(BaseModel):
     layout: int
+
+
+class SetMVParamsRequest(BaseModel):
+    font: int | None = None
+    outer_border: int | None = None
+    inner_border: int | None = None
+    output_format: int | None = None
 
 
 class SetWindowRequest(BaseModel):

@@ -38,6 +38,8 @@ export const api = {
   getMultiviewer: (id: number) => request(`/api/multiviewers/${id}`),
   setLayout: (id: number, layout: number) =>
     request(`/api/multiviewers/${id}/layout`, { method: 'POST', body: JSON.stringify({ layout }) }),
+  setMVParams: (id: number, data: { font?: number; outer_border?: number; inner_border?: number; output_format?: number }) =>
+    request(`/api/multiviewers/${id}/params`, { method: 'POST', body: JSON.stringify(data) }),
   setWindow: (id: number, windowIndex: number, data: Record<string, unknown>) =>
     request(`/api/multiviewers/${id}/windows/${windowIndex}`, { method: 'POST', body: JSON.stringify(data) }),
 

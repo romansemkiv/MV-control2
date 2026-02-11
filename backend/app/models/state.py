@@ -14,6 +14,7 @@ class StateMV(Base):
     font: Mapped[int | None] = mapped_column(nullable=True)
     outer_border: Mapped[int | None] = mapped_column(nullable=True)
     inner_border: Mapped[int | None] = mapped_column(nullable=True)
+    output_format: Mapped[int | None] = mapped_column(nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
 

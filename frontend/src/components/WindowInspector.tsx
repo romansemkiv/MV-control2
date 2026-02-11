@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api/client'
-import { PCM_BARS_VALUES, PCM_BARS_LABELS } from '../protocol-mappings'
+import {
+  PCM_BARS_VALUES, PCM_BARS_LABELS,
+  UMD_SELECTION_LABELS,
+  VARID_UMD_SELECTION, VARID_UMD_TEXT,
+  VARID_UMD_BOX_COLOUR, VARID_UMD_BOX_ALPHA,
+  VARID_UMD_BOX_X, VARID_UMD_BOX_Y,
+  VARID_UMD_TEXT_COLOUR, VARID_UMD_TEXT_ALPHA,
+  VARID_UMD_TEXT_SIZE, VARID_UMD_PADDING,
+} from '../protocol-mappings'
 
 interface Props {
   mvId: number
@@ -10,6 +18,17 @@ interface Props {
   mvNexxIndex: number
   routing: any[]
   onUpdate: () => void
+}
+
+function nexxColorToHex(val: string | number): string {
+  const n = typeof val === 'string' ? parseInt(val, 10) : val
+  if (isNaN(n) || n < 0) return '#000000'
+  const hex = (n & 0xFFFFFF).toString(16).padStart(6, '0')
+  return `#${hex}`
+}
+
+function hexToNexxColor(hex: string): number {
+  return parseInt(hex.replace('#', ''), 16)
 }
 
 function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, routing, onUpdate }: Props) {
@@ -90,43 +109,182 @@ function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, 
 function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
   layer: any; layerIndex: number; mvId: number; windowIndex: number; onUpdate: () => void
 }) {
-  const [text, setText] = useState(layer?.['2709'] ?? '')
+  const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    setText(layer?.['2709'] ?? '')
-  }, [layer?.['2709']])
+  const [selection, setSelection] = useState<number>(0)
+  const [text, setText] = useState('')
+  const [boxColor, setBoxColor] = useState('#000000')
+  const [boxAlpha, setBoxAlpha] = useState(255)
+  const [boxX, setBoxX] = useState(0)
+  const [boxY, setBoxY] = useState(0)
+  const [textColor, setTextColor] = useState('#ffffff')
+  const [textAlpha, setTextAlpha] = useState(255)
+  const [textSize, setTextSize] = useState(20)
+  const [padding, setPadding] = useState(0)
 
-  const handleSaveText = async () => {
+  useEffect(() => {
+    setSelection(parseInt(layer?.[VARID_UMD_SELECTION] ?? '0', 10) || 0)
+    setText(layer?.[VARID_UMD_TEXT] ?? '')
+    setBoxColor(nexxColorToHex(layer?.[VARID_UMD_BOX_COLOUR] ?? '0'))
+    setBoxAlpha(parseInt(layer?.[VARID_UMD_BOX_ALPHA] ?? '255', 10) || 0)
+    setBoxX(parseInt(layer?.[VARID_UMD_BOX_X] ?? '0', 10) || 0)
+    setBoxY(parseInt(layer?.[VARID_UMD_BOX_Y] ?? '0', 10) || 0)
+    setTextColor(nexxColorToHex(layer?.[VARID_UMD_TEXT_COLOUR] ?? '16777215'))
+    setTextAlpha(parseInt(layer?.[VARID_UMD_TEXT_ALPHA] ?? '255', 10) || 0)
+    setTextSize(parseInt(layer?.[VARID_UMD_TEXT_SIZE] ?? '20', 10) || 0)
+    setPadding(parseInt(layer?.[VARID_UMD_PADDING] ?? '0', 10) || 0)
+  }, [layer])
+
+  const sendUmd = async (data: Record<string, string | number>) => {
+    const fullUmd: any[] = [{}, {}, {}]
+    fullUmd[layerIndex] = data
+    await api.setWindow(mvId, windowIndex, { umd: fullUmd })
+    onUpdate()
+  }
+
+  const handleTypeChange = async (val: number) => {
+    setSelection(val)
     setSaving(true)
     try {
-      const fullUmd: any[] = []
-      for (let i = 0; i < 3; i++) {
-        fullUmd.push(i === layerIndex ? { '2709': text } : {})
-      }
-      await api.setWindow(mvId, windowIndex, { umd: fullUmd })
-      onUpdate()
+      await sendUmd({ [VARID_UMD_SELECTION]: val })
     } finally {
       setSaving(false)
     }
   }
 
+  const handleSetAll = async () => {
+    setSaving(true)
+    try {
+      const data: Record<string, string | number> = {
+        [VARID_UMD_BOX_COLOUR]: hexToNexxColor(boxColor),
+        [VARID_UMD_BOX_ALPHA]: boxAlpha,
+        [VARID_UMD_BOX_X]: boxX,
+        [VARID_UMD_BOX_Y]: boxY,
+        [VARID_UMD_TEXT_COLOUR]: hexToNexxColor(textColor),
+        [VARID_UMD_TEXT_ALPHA]: textAlpha,
+        [VARID_UMD_TEXT_SIZE]: textSize,
+        [VARID_UMD_PADDING]: padding,
+      }
+      if (selection === 1) {
+        data[VARID_UMD_TEXT] = text
+      }
+      await sendUmd(data)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const isOff = selection === 0
+  const isStatic = selection === 1
+
   return (
-    <div className="flex items-center gap-2 mb-2">
-      <span className="text-neutral-500 text-xs w-16">Layer {layerIndex + 1}</span>
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="UMD text"
-        className="flex-1 px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm"
-      />
-      <button
-        onClick={handleSaveText}
-        disabled={saving}
-        className="px-2 py-1 bg-amber-600 hover:bg-amber-500 rounded text-white text-xs"
+    <div className="mb-2 border border-neutral-700 rounded">
+      <div
+        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-neutral-750"
+        onClick={() => setExpanded(!expanded)}
       >
-        Set
-      </button>
+        <span className="text-neutral-400 text-xs">{expanded ? '\u25BC' : '\u25B6'}</span>
+        <span className="text-neutral-300 text-sm font-medium w-16">Layer {layerIndex + 1}</span>
+        <select
+          value={selection}
+          onChange={(e) => { e.stopPropagation(); handleTypeChange(Number(e.target.value)) }}
+          onClick={(e) => e.stopPropagation()}
+          disabled={saving}
+          className="px-2 py-0.5 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-xs"
+        >
+          {Object.entries(UMD_SELECTION_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+      </div>
+
+      {expanded && !isOff && (
+        <div className="px-3 pb-3 pt-1">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {isStatic && (
+              <div className="col-span-2">
+                <label className="block text-neutral-500 text-xs mb-0.5">Text</label>
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Box Color</label>
+              <div className="flex gap-1 items-center">
+                <input type="color" value={boxColor} onChange={(e) => setBoxColor(e.target.value)} className="w-8 h-7 bg-transparent border-0 cursor-pointer" />
+                <span className="text-neutral-400 text-xs">{boxColor}</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Box Alpha</label>
+              <input type="number" min={0} max={255} value={boxAlpha} onChange={(e) => setBoxAlpha(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Box X</label>
+              <div className="flex items-center gap-2">
+                <input type="range" min={0} max={10000} value={boxX} onChange={(e) => setBoxX(Number(e.target.value))}
+                  className="flex-1 h-1.5 accent-amber-500 cursor-pointer" />
+                <div className="flex items-center">
+                  <input type="number" min={0} max={100} step={0.01} value={+(boxX / 100).toFixed(2)} onChange={(e) => setBoxX(Math.round(Number(e.target.value) * 100))}
+                    className="w-16 px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded-l text-neutral-100 text-xs text-center" />
+                  <span className="px-1 py-0.5 bg-neutral-600 border border-l-0 border-neutral-600 rounded-r text-neutral-400 text-xs">%</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Box Y</label>
+              <div className="flex items-center gap-2">
+                <input type="range" min={0} max={10000} value={boxY} onChange={(e) => setBoxY(Number(e.target.value))}
+                  className="flex-1 h-1.5 accent-amber-500 cursor-pointer" />
+                <div className="flex items-center">
+                  <input type="number" min={0} max={100} step={0.01} value={+(boxY / 100).toFixed(2)} onChange={(e) => setBoxY(Math.round(Number(e.target.value) * 100))}
+                    className="w-16 px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded-l text-neutral-100 text-xs text-center" />
+                  <span className="px-1 py-0.5 bg-neutral-600 border border-l-0 border-neutral-600 rounded-r text-neutral-400 text-xs">%</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Text Color</label>
+              <div className="flex gap-1 items-center">
+                <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-8 h-7 bg-transparent border-0 cursor-pointer" />
+                <span className="text-neutral-400 text-xs">{textColor}</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Text Alpha</label>
+              <input type="number" min={0} max={255} value={textAlpha} onChange={(e) => setTextAlpha(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Text Size</label>
+              <input type="number" min={1} value={textSize} onChange={(e) => setTextSize(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
+            </div>
+            <div>
+              <label className="block text-neutral-500 text-xs mb-0.5">Padding</label>
+              <input type="number" min={0} value={padding} onChange={(e) => setPadding(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
+            </div>
+          </div>
+
+          <button
+            onClick={handleSetAll}
+            disabled={saving}
+            className="mt-3 w-full px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded text-white text-sm"
+          >
+            {saving ? 'Saving...' : 'Set'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

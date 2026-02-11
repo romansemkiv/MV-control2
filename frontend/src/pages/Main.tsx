@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useMVStore } from '../stores/mvStore'
 import { api } from '../api/client'
+import { OUTPUT_FORMAT_LABELS, TEXT_FONT_LABELS, BORDER_PIXEL_VALUES, BORDER_PIXEL_LABELS } from '../protocol-mappings'
 import { getLayoutById } from '../data/layouts'
 import LayoutCanvas from '../components/LayoutCanvas'
 import WindowInspector from '../components/WindowInspector'
@@ -52,6 +53,14 @@ function Main() {
     setRefreshing(false)
   }
 
+  const handleMVParamChange = async (params: { font?: number; outer_border?: number; inner_border?: number; output_format?: number }) => {
+    if (!currentMV) return
+    try {
+      await api.setMVParams(currentMV.id, params)
+      await selectMV(currentMV.id)
+    } catch {}
+  }
+
   const handleSelectLayout = async (layoutId: number) => {
     if (!currentMV) return
     await api.setLayout(currentMV.id, layoutId - 1)
@@ -91,8 +100,46 @@ function Main() {
               >
                 Layout: {currentMV.layout != null ? currentMV.layout + 1 : '?'}
               </button>
-              <span className="text-neutral-500 text-sm">Font: {currentMV.font ?? '-'}</span>
-              <span className="text-neutral-500 text-sm">Border: {currentMV.outer_border ?? '-'}/{currentMV.inner_border ?? '-'}</span>
+              <select
+                value={currentMV.output_format ?? 0}
+                onChange={(e) => handleMVParamChange({ output_format: Number(e.target.value) })}
+                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
+                title="Output Format"
+              >
+                {Object.entries(OUTPUT_FORMAT_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+              <select
+                value={currentMV.font ?? 0}
+                onChange={(e) => handleMVParamChange({ font: Number(e.target.value) })}
+                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
+                title="Font"
+              >
+                {Object.entries(TEXT_FONT_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+              <select
+                value={currentMV.outer_border ?? 0}
+                onChange={(e) => handleMVParamChange({ outer_border: Number(e.target.value) })}
+                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
+                title="Outer Border"
+              >
+                {BORDER_PIXEL_VALUES.map((v) => (
+                  <option key={v} value={v}>Out: {BORDER_PIXEL_LABELS[v]}</option>
+                ))}
+              </select>
+              <select
+                value={currentMV.inner_border ?? 0}
+                onChange={(e) => handleMVParamChange({ inner_border: Number(e.target.value) })}
+                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
+                title="Inner Border"
+              >
+                {BORDER_PIXEL_VALUES.map((v) => (
+                  <option key={v} value={v}>In: {BORDER_PIXEL_LABELS[v]}</option>
+                ))}
+              </select>
             </>
           )}
         </div>

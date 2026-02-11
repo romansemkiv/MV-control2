@@ -23,7 +23,10 @@ function PresetsModal({ mvId, mvNexxIndex, onClose }: Props) {
       const mv = await api.getMultiviewer(mvId)
       const payload: any = { mv_nexx_index: mvNexxIndex, params: {} }
       if (selected.layout) payload.params.layout = mv.layout
-      if (selected.font) payload.params.font = mv.font
+      if (selected.font) {
+        payload.params.font = mv.font
+        payload.params.output_format = mv.output_format
+      }
       if (selected.borders) {
         payload.params.outer_border = mv.outer_border
         payload.params.inner_border = mv.inner_border

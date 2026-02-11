@@ -197,6 +197,59 @@ export const MV_ENABLE_LABELS: Record<MvEnable, string> = {
 }
 
 // ============================================================================
+// Output Format (VarID 2720)
+// ============================================================================
+
+export const OutputFormat = {
+  _1080p59: 0,
+  _1080p50: 1,
+  _1080i59: 2,
+  _1080i50: 3,
+} as const
+
+export type OutputFormat = (typeof OutputFormat)[keyof typeof OutputFormat]
+
+export const OUTPUT_FORMAT_LABELS: Record<OutputFormat, string> = {
+  [OutputFormat._1080p59]: '1080p59',
+  [OutputFormat._1080p50]: '1080p50',
+  [OutputFormat._1080i59]: '1080i59',
+  [OutputFormat._1080i50]: '1080i50',
+}
+
+// ============================================================================
+// Text Font (VarID 2716)
+// ============================================================================
+
+export const TextFont = {
+  Sans: 0,
+  SansMono: 1,
+  DDin: 2,
+} as const
+
+export type TextFont = (typeof TextFont)[keyof typeof TextFont]
+
+export const TEXT_FONT_LABELS: Record<TextFont, string> = {
+  [TextFont.Sans]: 'Sans',
+  [TextFont.SansMono]: 'Sans Mono',
+  [TextFont.DDin]: 'D Din',
+}
+
+// ============================================================================
+// Border Pixels (VarID 2726 outer / 2727 inner)
+// ============================================================================
+
+export const BORDER_PIXEL_VALUES = [0, 1, 2, 3, 4] as const
+export type BorderPixelValue = (typeof BORDER_PIXEL_VALUES)[number]
+
+export const BORDER_PIXEL_LABELS: Record<BorderPixelValue, string> = {
+  0: '0 px',
+  1: '1 px',
+  2: '2 px',
+  3: '3 px',
+  4: '4 px',
+}
+
+// ============================================================================
 // System Limits
 // ============================================================================
 
