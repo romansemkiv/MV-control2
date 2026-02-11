@@ -352,33 +352,48 @@ function IntegrationsTab() {
 
 function StatusTab() {
   const [status, setStatus] = useState<any>(null)
-  const [refreshResult, setRefreshResult] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
+  const [localRefreshing, setLocalRefreshing] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => { api.systemStatus().then(setStatus).catch(() => {}) }, [])
+  const loadStatus = () => {
+    api.refreshStatus().then(setStatus).catch(() => {})
+  }
+
+  useEffect(() => {
+    loadStatus()
+    const poll = setInterval(loadStatus, 3000)
+    return () => clearInterval(poll)
+  }, [])
+
+  const isRunning = status?.is_running || localRefreshing
 
   const doRefresh = async () => {
-    setLoading(true)
+    setLocalRefreshing(true)
     setError('')
-    setRefreshResult(null)
     try {
-      const result = await api.refresh()
-      setRefreshResult(result)
-      api.systemStatus().then(setStatus)
+      await api.refresh()
+      loadStatus()
     } catch (err: any) {
       setError(err.message || 'Refresh failed')
     } finally {
-      setLoading(false)
+      setLocalRefreshing(false)
     }
   }
+
+  const refreshResult = status?.result
 
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-neutral-300 font-medium mb-2">System Status</h3>
         {status ? (
-          <p className="text-neutral-400 text-sm">Last refresh: {status.last_refresh ?? 'Never'}</p>
+          <div className="text-neutral-400 text-sm space-y-1">
+            <p>Last refresh: {status.finished_at ? new Date(status.finished_at).toLocaleString() : 'Never'}</p>
+            {status.started_by && status.finished_at && <p>By: {status.started_by}</p>}
+            {status.is_running && status.started_by && (
+              <p className="text-amber-400">Refresh in progress (started by {status.started_by})...</p>
+            )}
+          </div>
         ) : (
           <p className="text-neutral-500 text-sm">Loading...</p>
         )}
@@ -387,10 +402,10 @@ function StatusTab() {
       <div>
         <button
           onClick={doRefresh}
-          disabled={loading}
+          disabled={isRunning}
           className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-neutral-600 disabled:cursor-not-allowed rounded text-white text-sm"
         >
-          {loading ? 'Refreshing...' : 'Refresh State from Equipment'}
+          {isRunning ? 'Refreshing...' : 'Refresh State from Equipment'}
         </button>
       </div>
 
@@ -400,9 +415,9 @@ function StatusTab() {
         </div>
       )}
 
-      {refreshResult && (
+      {refreshResult && !status?.is_running && (
         <div className="space-y-2">
-          <h4 className="text-neutral-300 font-medium text-sm">Refresh Results:</h4>
+          <h4 className="text-neutral-300 font-medium text-sm">Last Refresh Results:</h4>
 
           {refreshResult.nexx && (
             <div className={`p-3 rounded border ${
@@ -422,7 +437,7 @@ function StatusTab() {
                   {refreshResult.nexx.errors?.length > 0 && (
                     <div className="mt-2 max-h-32 overflow-y-auto">
                       {refreshResult.nexx.errors.slice(0, 5).map((err: string, i: number) => (
-                        <p key={i} className="text-red-400 text-xs">• {err}</p>
+                        <p key={i} className="text-red-400 text-xs">{err}</p>
                       ))}
                       {refreshResult.nexx.errors.length > 5 && (
                         <p className="text-red-400 text-xs">...and {refreshResult.nexx.errors.length - 5} more</p>
@@ -440,7 +455,7 @@ function StatusTab() {
               {refreshResult.quartz.error ? (
                 <p className="text-red-400 text-xs mt-1">{refreshResult.quartz.error}</p>
               ) : (
-                <p className="text-green-400 text-xs mt-1">✓ Synced {refreshResult.quartz.sources_synced} sources, {refreshResult.quartz.routes_synced} routes</p>
+                <p className="text-green-400 text-xs mt-1">Synced {refreshResult.quartz.sources_synced} sources, {refreshResult.quartz.routes_synced} routes</p>
               )}
             </div>
           )}
@@ -449,7 +464,7 @@ function StatusTab() {
             <div className="p-3 bg-yellow-900/20 border border-yellow-700 rounded">
               <p className="text-sm font-medium text-yellow-400">Warnings:</p>
               {refreshResult.errors.map((err: string, i: number) => (
-                <p key={i} className="text-yellow-400 text-xs mt-1">• {err}</p>
+                <p key={i} className="text-yellow-400 text-xs mt-1">{err}</p>
               ))}
             </div>
           )}

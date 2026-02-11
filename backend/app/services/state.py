@@ -22,7 +22,7 @@ from app.protocol_mappings import (
 )
 
 
-def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
+def refresh_nexx_state(db: Session, nexx: NEXXClient, mv_indices: list[int] | None = None) -> dict:
     import logging
     logger = logging.getLogger(__name__)
 
@@ -68,6 +68,9 @@ def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:
         logger.info(f"[NEXX Sync] Using fallback enabled MVs: {[0, 1, 2]}")
 
     enabled_indices = [idx for idx in range(max_mv_count) if enabled_flags.get(idx, False)]
+
+    if mv_indices is not None:
+        enabled_indices = [idx for idx in enabled_indices if idx in mv_indices]
 
     # Pre-load all DB objects (3 queries instead of 18 per MV)
     mv_by_idx = {mv.nexx_index: mv for mv in db.query(Multiviewer).filter(
@@ -163,19 +166,22 @@ def _sync_all_windows_batched(db: Session, nexx: NEXXClient, mv_id: int, mv_idx:
         state.updated_at = now
 
 
-def refresh_quartz_state(db: Session, quartz: QuartzClient, max_sources: int, max_outputs: int) -> dict:
+def refresh_quartz_state(db: Session, quartz: QuartzClient, max_sources: int, max_outputs: int,
+                         source_inputs: list[int] | None = None, output_range: list[int] | None = None) -> dict:
     from concurrent.futures import ThreadPoolExecutor, as_completed
     import logging
 
     logger = logging.getLogger(__name__)
     results = {"sources_synced": 0, "routes_synced": 0, "errors": []}
 
+    source_ids_to_fetch = source_inputs if source_inputs is not None else list(range(1, max_sources + 1))
+
     # Parallel fetch of source names (max 10 concurrent connections)
     # NOTE: Quartz server has RD/RS swapped - use read_output_name to get actual sources
-    logger.info(f"[Quartz Sync] Fetching {max_sources} source names...")
+    logger.info(f"[Quartz Sync] Fetching {len(source_ids_to_fetch)} source names...")
     input_data = {}
     with ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_input = {executor.submit(quartz.read_output_name, i): i for i in range(1, max_sources + 1)}
+        future_to_input = {executor.submit(quartz.read_output_name, i): i for i in source_ids_to_fetch}
         for future in as_completed(future_to_input):
             i = future_to_input[future]
             try:
@@ -184,7 +190,6 @@ def refresh_quartz_state(db: Session, quartz: QuartzClient, max_sources: int, ma
             except Exception as e:
                 results["errors"].append(f"Source {i}: {e}")
 
-    # Save input names to DB
     for i, label in input_data.items():
         source = db.query(Source).filter(Source.quartz_input == i).first()
         if not source:
@@ -196,11 +201,12 @@ def refresh_quartz_state(db: Session, quartz: QuartzClient, max_sources: int, ma
 
     logger.info(f"[Quartz Sync] Synced {results['sources_synced']} sources")
 
-    # Parallel fetch of routing (max 10 concurrent connections)
-    logger.info(f"[Quartz Sync] Fetching {max_outputs} routing states...")
+    output_ids_to_fetch = output_range if output_range is not None else list(range(1, max_outputs + 1))
+
+    logger.info(f"[Quartz Sync] Fetching {len(output_ids_to_fetch)} routing states...")
     routing_data = {}
     with ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_output = {executor.submit(quartz.read_routing, out): out for out in range(1, max_outputs + 1)}
+        future_to_output = {executor.submit(quartz.read_routing, out): out for out in output_ids_to_fetch}
         for future in as_completed(future_to_output):
             out = future_to_output[future]
             try:

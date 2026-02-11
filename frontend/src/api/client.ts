@@ -48,7 +48,7 @@ export const api = {
 
   // Refresh
   refresh: () => request('/api/refresh', { method: 'POST' }),
-  systemStatus: () => request('/api/system/status'),
+  refreshStatus: () => request('/api/refresh/status'),
 
   // Integrations
   getIntegrations: () => request('/api/integrations'),

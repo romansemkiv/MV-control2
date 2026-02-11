@@ -28,6 +28,13 @@ function Main() {
   }, [])
 
   useEffect(() => {
+    const poll = setInterval(() => {
+      api.refreshStatus().then((s: any) => setRefreshing(s.is_running)).catch(() => {})
+    }, 3000)
+    return () => clearInterval(poll)
+  }, [])
+
+  useEffect(() => {
     if (multiviewers.length > 0 && !currentMV) {
       selectMV(multiviewers[0].id)
     }
@@ -38,6 +45,7 @@ function Main() {
     try {
       await api.refresh()
       await loadMultiviewers()
+      await loadSources()
       await loadRouting()
       if (currentMV) await selectMV(currentMV.id)
     } catch {}
