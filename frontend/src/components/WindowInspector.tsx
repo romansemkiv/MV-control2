@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import { PCM_BARS_VALUES, PCM_BARS_LABELS } from '../protocol-mappings'
 
@@ -80,7 +80,7 @@ function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, 
         <h4 className="text-neutral-400 text-sm mb-2">UMD Layers</h4>
         {[0, 1, 2].map((idx) => {
           const layer = windowData?.umd?.[idx] || {}
-          return <UMDLayer key={idx} layer={layer} layerIndex={idx} mvId={mvId} windowIndex={windowIndex} onUpdate={onUpdate} />
+          return <UMDLayer key={`${mvId}-${windowIndex}-${idx}`} layer={layer} layerIndex={idx} mvId={mvId} windowIndex={windowIndex} onUpdate={onUpdate} />
         })}
       </div>
     </div>
@@ -92,6 +92,10 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
 }) {
   const [text, setText] = useState(layer?.['2709'] ?? '')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setText(layer?.['2709'] ?? '')
+  }, [layer?.['2709']])
 
   const handleSaveText = async () => {
     setSaving(true)
