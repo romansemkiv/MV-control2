@@ -47,7 +47,7 @@ function LayoutCanvas({ windows, selectedWindow, onSelectWindow, mvNexxIndex, so
               y={win.y * 900 + (win.h * 900) / 2 - 20}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill="#e5e5e5"
+              fill="#737373"
               fontSize={Math.min(win.w * 1600, win.h * 900) * 0.25}
               fontWeight="bold"
             >
@@ -58,8 +58,8 @@ function LayoutCanvas({ windows, selectedWindow, onSelectWindow, mvNexxIndex, so
               y={win.y * 900 + (win.h * 900) / 2 + 50}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill="#737373"
-              fontSize={Math.min(win.w * 1600, win.h * 900) * 0.08}
+              fill="#e5e5e5"
+              fontSize={Math.min(win.w * 1600, win.h * 900) * 0.11}
             >
               {sourceLabel}
             </text>

@@ -77,14 +77,13 @@ function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, 
         </div>
       </div>
 
-      {windowData?.umd && windowData.umd.length > 0 && (
-        <div className="mt-4">
-          <h4 className="text-neutral-400 text-sm mb-2">UMD Layers</h4>
-          {windowData.umd.map((layer: any, idx: number) => (
-            <UMDLayer key={idx} layer={layer} layerIndex={idx} mvId={mvId} windowIndex={windowIndex} onUpdate={onUpdate} />
-          ))}
-        </div>
-      )}
+      <div className="mt-4">
+        <h4 className="text-neutral-400 text-sm mb-2">UMD Layers</h4>
+        {[0, 1, 2].map((idx) => {
+          const layer = windowData?.umd?.[idx] || {}
+          return <UMDLayer key={idx} layer={layer} layerIndex={idx} mvId={mvId} windowIndex={windowIndex} onUpdate={onUpdate} />
+        })}
+      </div>
     </div>
   )
 }

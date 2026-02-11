@@ -54,15 +54,6 @@ function Main() {
   const layout = currentMV ? getLayoutById((currentMV.layout ?? 0) + 1) : null
   const selectedWindowData = currentMV?.windows?.find((w: any) => w.window_index === selectedWindow)
 
-  if (selectedWindow !== null && currentMV) {
-    console.log('Debug Window Inspector:', {
-      selectedWindow,
-      windows: currentMV.windows,
-      selectedWindowData,
-      windowsLength: currentMV.windows?.length
-    })
-  }
-
   const handleLogout = async () => {
     await logout()
     navigate('/login')
@@ -143,7 +134,7 @@ function Main() {
                 <WindowInspector
                   mvId={currentMV.id}
                   windowIndex={selectedWindow}
-                  windowData={selectedWindowData || { window_index: selectedWindow, pcm_bars: 0, umd: [] }}
+                  windowData={selectedWindowData || { window_index: selectedWindow, pcm_bars: 0, umd: [{}, {}, {}] }}
                   sources={sources}
                   mvNexxIndex={currentMV.nexx_index}
                   routing={routing}
