@@ -53,7 +53,7 @@ def apply_preset(preset_id: int, user: User = Depends(get_current_user), db: Ses
         raise HTTPException(status_code=404, detail="Preset not found")
 
     from app.services.integration import get_nexx_client
-    from app.services.state import VARID_MV_LAYOUT, VARID_MV_FONT, VARID_MV_OUTER_BORDER, VARID_MV_INNER_BORDER, VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index
+    from app.protocol_mappings import VARID_MV_LAYOUT, VARID_MV_FONT, VARID_MV_OUTER_BORDER, VARID_MV_INNER_BORDER, VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index
 
     nexx = get_nexx_client(db)
     if not nexx:

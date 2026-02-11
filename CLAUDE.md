@@ -90,7 +90,7 @@ Auth via API key (header/query `webeasy-api-key`) or JWT (`/BT/JWTCREATE/<base64
 - 2708-2715, 2717, 2733 (X.Y.Z): UMD parameters (selection, text, colors as 0xRRGGBB, alpha 0-255, position, size, padding)
 - 2735.X: update preview (write-only, SET=1)
 
-URL-encode special chars in text fields (%20 for space). Enabled MV count read from VarID 2702. Actual window count depends on layout. 43 layouts available. NEXX enum mappings will be created during implementation.
+URL-encode special chars in text fields (%20 for space). Enabled MV count read from VarID 2702. Actual window count depends on layout. 43 layouts available. NEXX enum mappings centralized in `backend/app/protocol_mappings.py` and `frontend/src/protocol-mappings.ts`.
 
 ### UMD & PCM specifics
 - UMD types: Off, Static, Dynamic line 1, NTP time, NTP time w offset

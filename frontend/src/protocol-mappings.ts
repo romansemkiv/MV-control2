@@ -1,0 +1,208 @@
+/**
+ * NEXX Protocol Mappings
+ * Централізовані мапінги між NEXX API enum індексами та реальними значеннями
+ */
+
+// ============================================================================
+// NEXX API VarIDs
+// ============================================================================
+
+// System Info (Read-only)
+export const VARID_TOTAL_MVS = '2700'
+export const VARID_LICENSED_MVS = '2701'
+export const VARID_ENABLED_MVS = '2702'
+
+// Multiviewer Level [mv_index]
+export const VARID_MV_ENABLE = '2703'
+export const VARID_MV_LAYOUT = '2704'
+export const VARID_MV_FONT = '2716'
+export const VARID_MV_OUTPUT_FORMAT = '2720'
+export const VARID_MV_OUTER_BORDER = '2726'
+export const VARID_MV_INNER_BORDER = '2727'
+export const VARID_MV_UPDATE_PREVIEW = '2735'
+
+// Window Level [mv_index].[window_index]
+export const VARID_VIDEO_AUDIO_SOURCE = '2707'
+export const VARID_SOURCE_LABEL = '2718'
+export const VARID_PCM_BARS = '2719'
+
+// UMD Level [mv_index].[window_index].[layer_index]
+export const VARID_UMD_SELECTION = '2708'
+export const VARID_UMD_TEXT = '2709'
+export const VARID_UMD_BOX_COLOUR = '2710'
+export const VARID_UMD_BOX_ALPHA = '2711'
+export const VARID_UMD_BOX_X = '2712'
+export const VARID_UMD_BOX_Y = '2713'
+export const VARID_UMD_TEXT_COLOUR = '2714'
+export const VARID_UMD_TEXT_ALPHA = '2715'
+export const VARID_UMD_TEXT_SIZE = '2717'
+export const VARID_UMD_PADDING = '2733'
+
+// Global Settings
+export const VARID_WINDOW_SIZE = '2721'
+export const VARID_TIMECODE_SOURCE = '2722'
+export const VARID_TIMECODE_FORMAT = '2734'
+export const VARID_NTP_OFFSET_DIRECTION = '2723'
+export const VARID_NTP_OFFSET_HOURS = '2724'
+export const VARID_NTP_OFFSET_MINUTES = '2725'
+export const VARID_GLOBAL_ATC_1_SOURCE = '2729'
+export const VARID_GLOBAL_ATC_2_SOURCE = '2730'
+export const VARID_GLOBAL_ATC_3_SOURCE = '2731'
+export const VARID_GLOBAL_ATC_4_SOURCE = '2732'
+
+export const UMD_VARIDS = [
+  VARID_UMD_SELECTION,
+  VARID_UMD_TEXT,
+  VARID_UMD_BOX_COLOUR,
+  VARID_UMD_BOX_ALPHA,
+  VARID_UMD_BOX_X,
+  VARID_UMD_BOX_Y,
+  VARID_UMD_TEXT_COLOUR,
+  VARID_UMD_TEXT_ALPHA,
+  VARID_UMD_TEXT_SIZE,
+  VARID_UMD_PADDING,
+]
+
+// ============================================================================
+// PCM Audio Bars (VarID 2719)
+// ============================================================================
+
+export const PCM_BARS_VALUES = [0, 2, 4, 6, 8, 12, 16] as const
+export type PcmBarsValue = (typeof PCM_BARS_VALUES)[number]
+
+export const PCM_BARS_LABELS: Record<PcmBarsValue, string> = {
+  0: 'Off',
+  2: '2 bars',
+  4: '4 bars',
+  6: '6 bars',
+  8: '8 bars',
+  12: '12 bars',
+  16: '16 bars',
+}
+
+// ============================================================================
+// UMD Selection (VarID 2708)
+// ============================================================================
+
+export const UmdSelection = {
+  Off: 0,
+  Static: 1,
+  DynamicLine1: 2,
+  NtpTime: 3,
+  NtpTimeOffset: 4,
+} as const
+
+export type UmdSelection = (typeof UmdSelection)[keyof typeof UmdSelection]
+
+export const UMD_SELECTION_LABELS: Record<UmdSelection, string> = {
+  [UmdSelection.Off]: 'Off',
+  [UmdSelection.Static]: 'Static',
+  [UmdSelection.DynamicLine1]: 'Dynamic Line 1',
+  [UmdSelection.NtpTime]: 'NTP Time',
+  [UmdSelection.NtpTimeOffset]: 'NTP Time with Offset',
+}
+
+// ============================================================================
+// Window Size (VarID 2721)
+// ============================================================================
+
+export const WindowSize = {
+  Full: 0,
+  ReducedSmall: 1,
+  ReducedMedium: 2,
+  ReducedLarge: 3,
+} as const
+
+export type WindowSize = (typeof WindowSize)[keyof typeof WindowSize]
+
+export const WINDOW_SIZE_LABELS: Record<WindowSize, string> = {
+  [WindowSize.Full]: 'Full',
+  [WindowSize.ReducedSmall]: 'Reduced Small',
+  [WindowSize.ReducedMedium]: 'Reduced Medium',
+  [WindowSize.ReducedLarge]: 'Reduced Large',
+}
+
+// ============================================================================
+// Timecode Source (VarID 2722)
+// ============================================================================
+
+export const TimecodeSource = {
+  LocalATC: 0,
+  NTP: 1,
+  NTPOffset: 2,
+  GlobalATC1: 3,
+  GlobalATC2: 4,
+  GlobalATC3: 5,
+  GlobalATC4: 6,
+} as const
+
+export type TimecodeSource = (typeof TimecodeSource)[keyof typeof TimecodeSource]
+
+export const TIMECODE_SOURCE_LABELS: Record<TimecodeSource, string> = {
+  [TimecodeSource.LocalATC]: 'Local ATC',
+  [TimecodeSource.NTP]: 'NTP',
+  [TimecodeSource.NTPOffset]: 'NTP with Offset',
+  [TimecodeSource.GlobalATC1]: 'Global ATC 1',
+  [TimecodeSource.GlobalATC2]: 'Global ATC 2',
+  [TimecodeSource.GlobalATC3]: 'Global ATC 3',
+  [TimecodeSource.GlobalATC4]: 'Global ATC 4',
+}
+
+// ============================================================================
+// Timecode Format (VarID 2734)
+// ============================================================================
+
+export const TimecodeFormat = {
+  Full: 0,
+  Short: 1,
+} as const
+
+export type TimecodeFormat = (typeof TimecodeFormat)[keyof typeof TimecodeFormat]
+
+export const TIMECODE_FORMAT_LABELS: Record<TimecodeFormat, string> = {
+  [TimecodeFormat.Full]: 'HH:MM:SS:FF.F',
+  [TimecodeFormat.Short]: 'HH:MM:SS',
+}
+
+// ============================================================================
+// NTP Offset Direction (VarID 2723)
+// ============================================================================
+
+export const NtpOffsetDirection = {
+  Plus: 0,
+  Minus: 1,
+} as const
+
+export type NtpOffsetDirection = (typeof NtpOffsetDirection)[keyof typeof NtpOffsetDirection]
+
+export const NTP_OFFSET_DIRECTION_LABELS: Record<NtpOffsetDirection, string> = {
+  [NtpOffsetDirection.Plus]: '+',
+  [NtpOffsetDirection.Minus]: '-',
+}
+
+// ============================================================================
+// MV Enable (VarID 2703)
+// ============================================================================
+
+export const MvEnable = {
+  Disabled: 0,
+  Enabled: 1,
+} as const
+
+export type MvEnable = (typeof MvEnable)[keyof typeof MvEnable]
+
+export const MV_ENABLE_LABELS: Record<MvEnable, string> = {
+  [MvEnable.Disabled]: 'Disabled',
+  [MvEnable.Enabled]: 'Enabled',
+}
+
+// ============================================================================
+// System Limits
+// ============================================================================
+
+export const MAX_MULTIVIEWERS = 120
+export const MAX_WINDOWS_PER_MV = 16
+export const MAX_UMD_LAYERS = 3
+export const MAX_SDI_INPUTS = 960
+export const MAX_LAYOUTS = 43
+export const MAX_BATCH_PARAMS = 40

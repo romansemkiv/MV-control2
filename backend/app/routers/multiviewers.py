@@ -10,7 +10,7 @@ from app.models.multiviewer import Multiviewer, UserAccessMV
 from app.models.state import StateMV, StateWindow
 from app.schemas.mv import MultiviewerResponse, MVStateResponse, SetLayoutRequest, SetWindowRequest
 from app.services.integration import get_nexx_client
-from app.services.state import VARID_MV_LAYOUT, VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index
+from app.protocol_mappings import VARID_MV_LAYOUT, VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index
 
 router = APIRouter(prefix="/api/multiviewers", tags=["multiviewers"])
 

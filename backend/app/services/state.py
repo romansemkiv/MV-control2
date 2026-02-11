@@ -8,43 +8,18 @@ from app.clients.quartz import QuartzClient
 from app.models.multiviewer import Multiviewer
 from app.models.source import Source
 from app.models.state import StateMV, StateWindow, StateRouting
-
-VARID_ENABLED_MVS = "2702"
-VARID_MV_ENABLE = "2703"
-VARID_MV_LAYOUT = "2704"
-VARID_MV_FONT = "2716"
-VARID_MV_OUTER_BORDER = "2726"
-VARID_MV_INNER_BORDER = "2727"
-VARID_PCM_BARS = "2719"
-VARID_UMD_SELECTION = "2708"
-VARID_UMD_TEXT = "2709"
-VARID_UMD_BOX_COLOUR = "2710"
-VARID_UMD_BOX_ALPHA = "2711"
-VARID_UMD_BOX_X = "2712"
-VARID_UMD_BOX_Y = "2713"
-VARID_UMD_TEXT_COLOUR = "2714"
-VARID_UMD_TEXT_ALPHA = "2715"
-VARID_UMD_TEXT_SIZE = "2717"
-VARID_UMD_PADDING = "2733"
-
-UMD_VARIDS = [
-    VARID_UMD_SELECTION, VARID_UMD_TEXT, VARID_UMD_BOX_COLOUR, VARID_UMD_BOX_ALPHA,
-    VARID_UMD_BOX_X, VARID_UMD_BOX_Y, VARID_UMD_TEXT_COLOUR, VARID_UMD_TEXT_ALPHA,
-    VARID_UMD_TEXT_SIZE, VARID_UMD_PADDING,
-]
-
-PCM_BARS_VALUES = [0, 2, 4, 6, 8, 12, 16]
-PCM_BARS_TO_INDEX = {0: 0, 2: 1, 4: 2, 6: 3, 8: 4, 12: 5, 16: 6}
-
-
-def pcm_index_to_value(index: int) -> int:
-    if 0 <= index < len(PCM_BARS_VALUES):
-        return PCM_BARS_VALUES[index]
-    return 0
-
-
-def pcm_value_to_index(value: int) -> int:
-    return PCM_BARS_TO_INDEX.get(value, 0)
+from app.protocol_mappings import (
+    VARID_ENABLED_MVS,
+    VARID_MV_ENABLE,
+    VARID_MV_LAYOUT,
+    VARID_MV_FONT,
+    VARID_MV_OUTER_BORDER,
+    VARID_MV_INNER_BORDER,
+    VARID_PCM_BARS,
+    UMD_VARIDS,
+    pcm_index_to_value,
+    pcm_value_to_index,
+)
 
 
 def refresh_nexx_state(db: Session, nexx: NEXXClient) -> dict:

@@ -9,6 +9,7 @@ from app.models.integration import Integration
 from app.schemas.integration import IntegrationRequest, IntegrationResponse
 from app.clients.quartz import QuartzClient, QuartzError
 from app.clients.nexx import NEXXClient, NEXXError
+from app.protocol_mappings import VARID_TOTAL_MVS
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
@@ -72,7 +73,7 @@ def _test_connection(integration: Integration) -> dict:
         elif integration.protocol == "nexx":
             logger.info(f"[Integration Test] Testing NEXX connection to {integration.host}")
             client = NEXXClient(host=integration.host, api_key=integration.api_key)
-            result = client.get_parameter("2700")
+            result = client.get_parameter(VARID_TOTAL_MVS)
             return {"ok": True, "message": f"Connected. Total MVs: {result}"}
     except (QuartzError, NEXXError) as e:
         logger.error(f"[Integration Test] Protocol error: {e}")

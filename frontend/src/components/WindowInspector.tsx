@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api/client'
+import { PCM_BARS_VALUES, PCM_BARS_LABELS } from '../protocol-mappings'
 
 interface Props {
   mvId: number
@@ -10,8 +11,6 @@ interface Props {
   routing: any[]
   onUpdate: () => void
 }
-
-const PCM_OPTIONS = [0, 2, 4, 6, 8, 12, 16]
 
 function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, routing, onUpdate }: Props) {
   const [saving, setSaving] = useState(false)
@@ -70,8 +69,8 @@ function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, 
             disabled={saving}
             className="w-full px-2 py-1.5 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm"
           >
-            {PCM_OPTIONS.map((v) => (
-              <option key={v} value={v}>{v === 0 ? 'Off' : `${v} bars`}</option>
+            {PCM_BARS_VALUES.map((v) => (
+              <option key={v} value={v}>{PCM_BARS_LABELS[v]}</option>
             ))}
           </select>
         </div>
