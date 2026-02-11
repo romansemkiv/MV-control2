@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Editor - MV Control</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; display: flex; gap: 20px; }
+    .left { flex: 1; }
+    .right { width: 400px; }
+    h1 { margin-bottom: 20px; font-size: 24px; }
+    h2 { margin-bottom: 10px; font-size: 18px; color: #fbbf24; }
+
+    .canvas-wrapper {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    canvas {
+      border: 2px solid #333;
+      cursor: crosshair;
+      display: block;
+      margin: 0 auto;
+      background: #000;
+    }
+
+    .controls {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #aaa;
+      font-size: 14px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #eee;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    textarea {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      min-height: 200px;
+      resize: vertical;
+    }
+
+    button {
+      background: #fbbf24;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    button:hover { background: #f59e0b; }
+    button.secondary {
+      background: #4b5563;
+      color: #fff;
+    }
+    button.secondary:hover { background: #374151; }
+    button.danger {
+      background: #dc2626;
+      color: #fff;
+    }
+    button.danger:hover { background: #b91c1c; }
+
+    .window-list {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .window-item {
+      background: #2a2a2a;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      border-left: 3px solid #fbbf24;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: move;
+      transition: all 0.2s;
+    }
+    .window-item:hover {
+      background: #333;
+    }
+    .window-item.dragging {
+      opacity: 0.5;
+    }
+    .window-item.drag-over {
+      border-top: 3px solid #3b82f6;
+    }
+    .window-item.selected {
+      border-left-color: #22c55e;
+      background: #1e3a2e;
+    }
+    .window-item button {
+      width: auto;
+      padding: 4px 12px;
+      margin: 0 0 0 8px;
+      font-size: 11px;
+    }
+
+    .info {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 4px;
+      border-left: 4px solid #3b82f6;
+      margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .info strong { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <h1>📐 Layout Editor</h1>
+
+      <div class="info">
+        <strong>Інструкція:</strong><br>
+        1. Вибери Layout ID (1-43)<br>
+        2. Клікай і тягни мишкою щоб намалювати вікна (магніт прив'язує до сітки 4x4)<br>
+        3. Перетягуй вікна в правій панелі щоб змінити їх порядок/ID<br>
+        4. Кожне вікно автоматично нумерується<br>
+        5. Після малювання натисни "Експорт JSON"<br>
+        6. Скопіюй код і заміни відповідний layout в <code>layouts.ts</code>
+      </div>
+
+      <div class="canvas-wrapper">
+        <canvas id="canvas" width="800" height="450"></canvas>
+      </div>
+
+      <div class="controls">
+        <h2>Налаштування</h2>
+        <label>Layout ID (1-43)</label>
+        <input type="number" id="layoutId" min="1" max="43" value="1">
+
+        <label>Layout Name</label>
+        <input type="text" id="layoutName" placeholder="наприклад: 2x2" value="2x2">
+
+        <label>
+          <input type="checkbox" id="snapToGrid" checked style="width: auto; margin-right: 8px;">
+          🧲 Магніт до сітки 4x4
+        </label>
+
+        <button onclick="clearCanvas()">🗑️ Очистити Canvas</button>
+        <button onclick="undoLast()" class="secondary">↩️ Відмінити останнє</button>
+      </div>
+    </div>
+
+    <div class="right">
+      <h2>Вікна (<span id="windowCount">0</span>)</h2>
+      <div class="window-list" id="windowList"></div>
+
+      <div class="controls">
+        <h2>Експорт</h2>
+        <button onclick="exportJSON()">📋 Експорт JSON</button>
+        <textarea id="output" readonly placeholder="JSON код з'явиться тут..."></textarea>
+        <button onclick="copyToClipboard()" class="secondary">📄 Копіювати в буфер</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const windows = [];
+    let isDrawing = false;
+    let startX, startY;
+    let selectedWindow = null;
+
+    // Draw grid
+    function drawGrid() {
+      // Fine grid
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 16; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 50, 0);
+        ctx.lineTo(i * 50, 450);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= 9; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * 50);
+        ctx.lineTo(800, i * 50);
+        ctx.stroke();
+      }
+
+      // 4x4 snap grid (thick lines)
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 2;
+      for (let i = 0; i <= 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 200, 0);
+        ctx.lineTo(i * 200, 450);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * 112.5);
+        ctx.lineTo(800, i * 112.5);
+        ctx.stroke();
+      }
+    }
+
+    function redraw() {
+      ctx.clearRect(0, 0, 800, 450);
+      drawGrid();
+
+      windows.forEach((win, idx) => {
+        const x = win.x * 800;
+        const y = win.y * 450;
+        const w = win.w * 800;
+        const h = win.h * 450;
+
+        ctx.fillStyle = selectedWindow === idx ? 'rgba(34, 197, 94, 0.3)' : 'rgba(251, 191, 36, 0.3)';
+        ctx.fillRect(x, y, w, h);
+
+        ctx.strokeStyle = selectedWindow === idx ? '#22c55e' : '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(win.id, x + w/2, y + h/2);
+      });
+
+      updateWindowList();
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
+      isDrawing = true;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      let currentX = e.clientX - rect.left;
+      let currentY = e.clientY - rect.top;
+
+      redraw();
+
+      // Show preview with snap
+      let x = Math.min(startX, currentX);
+      let y = Math.min(startY, currentY);
+      let w = Math.abs(currentX - startX);
+      let h = Math.abs(currentY - startY);
+
+      if (document.getElementById('snapToGrid').checked) {
+        x = snapToGrid(x, true);
+        y = snapToGrid(y, false);
+        w = snapToGrid(w, true);
+        h = snapToGrid(h, false);
+        w = Math.max(w, 200);
+        h = Math.max(h, 112.5);
+      }
+
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+    });
+
+    // Snap to 4x4 grid
+    function snapToGrid(value, isWidth = false) {
+      const snapEnabled = document.getElementById('snapToGrid').checked;
+      if (!snapEnabled) return value;
+
+      const gridSize = isWidth ? 200 : 112.5; // 800/4 or 450/4
+      const snapped = Math.round(value / gridSize) * gridSize;
+      return snapped;
+    }
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+
+      const rect = canvas.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      const endY = e.clientY - rect.top;
+
+      let x = Math.min(startX, endX);
+      let y = Math.min(startY, endY);
+      let w = Math.abs(endX - startX);
+      let h = Math.abs(endY - startY);
+
+      // Apply snap to grid
+      const snapEnabled = document.getElementById('snapToGrid').checked;
+      if (snapEnabled) {
+        x = snapToGrid(x, true);
+        y = snapToGrid(y, false);
+        w = snapToGrid(w, true);
+        h = snapToGrid(h, false);
+        // Ensure minimum size (1 grid cell)
+        w = Math.max(w, 200);
+        h = Math.max(h, 112.5);
+      }
+
+      if (w > 10 && h > 10) {
+        windows.push({
+          id: windows.length + 1,
+          x: Math.round((x / 800) * 1000) / 1000,
+          y: Math.round((y / 450) * 1000) / 1000,
+          w: Math.round((w / 800) * 1000) / 1000,
+          h: Math.round((h / 450) * 1000) / 1000,
+        });
+      }
+
+      redraw();
+    });
+
+    let draggedIndex = null;
+
+    function updateWindowList() {
+      const list = document.getElementById('windowList');
+      const count = document.getElementById('windowCount');
+      count.textContent = windows.length;
+
+      list.innerHTML = windows.map((win, idx) => `
+        <div class="window-item ${selectedWindow === idx ? 'selected' : ''}"
+             draggable="true"
+             data-index="${idx}"
+             onclick="selectWindow(${idx})">
+          <span><strong>#${win.id}</strong> x:${win.x.toFixed(3)} y:${win.y.toFixed(3)} w:${win.w.toFixed(3)} h:${win.h.toFixed(3)}</span>
+          <button onclick="deleteWindow(${idx}); event.stopPropagation()" class="danger">✕</button>
+        </div>
+      `).join('');
+
+      // Add drag event listeners
+      document.querySelectorAll('.window-item').forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragend', handleDragEnd);
+      });
+    }
+
+    function handleDragStart(e) {
+      draggedIndex = parseInt(e.target.getAttribute('data-index'));
+      e.target.classList.add('dragging');
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      const target = e.target.closest('.window-item');
+      if (target) {
+        document.querySelectorAll('.window-item').forEach(item => {
+          item.classList.remove('drag-over');
+        });
+        target.classList.add('drag-over');
+      }
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const target = e.target.closest('.window-item');
+      if (!target || draggedIndex === null) return;
+
+      const targetIndex = parseInt(target.getAttribute('data-index'));
+
+      if (draggedIndex !== targetIndex) {
+        // Move window in array
+        const [draggedWindow] = windows.splice(draggedIndex, 1);
+        windows.splice(targetIndex, 0, draggedWindow);
+
+        // Renumber all windows
+        windows.forEach((win, i) => win.id = i + 1);
+
+        // Update selected window index
+        if (selectedWindow === draggedIndex) {
+          selectedWindow = targetIndex;
+        } else if (draggedIndex < selectedWindow && targetIndex >= selectedWindow) {
+          selectedWindow--;
+        } else if (draggedIndex > selectedWindow && targetIndex <= selectedWindow) {
+          selectedWindow++;
+        }
+
+        redraw();
+      }
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.window-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      draggedIndex = null;
+    }
+
+    function selectWindow(idx) {
+      selectedWindow = idx;
+      redraw();
+    }
+
+    function deleteWindow(idx) {
+      windows.splice(idx, 1);
+      windows.forEach((win, i) => win.id = i + 1);
+      selectedWindow = null;
+      redraw();
+    }
+
+    function clearCanvas() {
+      if (!windows.length || confirm('Очистити всі вікна?')) {
+        windows.length = 0;
+        selectedWindow = null;
+        redraw();
+      }
+    }
+
+    function undoLast() {
+      if (windows.length) {
+        windows.pop();
+        selectedWindow = null;
+        redraw();
+      }
+    }
+
+    function exportJSON() {
+      const id = parseInt(document.getElementById('layoutId').value);
+      const name = document.getElementById('layoutName').value;
+
+      const json = `  // Layout ${id}: ${name}
+  { id: ${id}, name: "${name}", windows: [
+${windows.map(w => `    { id: ${w.id}, x: ${w.x}, y: ${w.y}, w: ${w.w}, h: ${w.h} },`).join('\n')}
+  ]},`;
+
+      document.getElementById('output').value = json;
+    }
+
+    function copyToClipboard() {
+      const output = document.getElementById('output');
+      output.select();
+      document.execCommand('copy');
+      alert('Скопійовано в буфер обміну!');
+    }
+
+    // Initial draw
+    redraw();
+  </script>
+</body>
+</html>
