@@ -16,6 +16,7 @@ function Main() {
   const navigate = useNavigate()
   const [showLayoutModal, setShowLayoutModal] = useState(false)
   const [showPresetsModal, setShowPresetsModal] = useState(false)
+  const [showMVParams, setShowMVParams] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
@@ -79,93 +80,106 @@ function Main() {
   return (
     <div className="min-h-screen bg-neutral-900 text-neutral-100">
       {/* Top Bar */}
-      <div className="bg-neutral-800 border-b border-neutral-700 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <span className="font-bold text-amber-500">MV-Control</span>
-          <select
-            value={currentMV?.id ?? ''}
-            onChange={(e) => e.target.value && selectMV(Number(e.target.value))}
-            className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
-          >
-            <option value="">Select MV</option>
-            {multiviewers.map((mv: any) => (
-              <option key={mv.id} value={mv.id}>{mv.label || `MV ${mv.nexx_index + 1}`}</option>
-            ))}
-          </select>
-          {currentMV && (
-            <>
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-neutral-800 border-b border-x border-neutral-700 px-4 py-2 rounded-b-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="font-bold text-amber-500">MV-Control</span>
+            <select
+              value={currentMV?.id ?? ''}
+              onChange={(e) => e.target.value && selectMV(Number(e.target.value))}
+              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
+            >
+              <option value="">Select MV</option>
+              {multiviewers.map((mv: any) => (
+                <option key={mv.id} value={mv.id}>{mv.label || `MV ${mv.nexx_index + 1}`}</option>
+              ))}
+            </select>
+            {currentMV && (
               <button
-                onClick={() => setShowLayoutModal(true)}
-                className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm"
+                onClick={() => setShowMVParams(!showMVParams)}
+                className={`px-2 py-1 border rounded text-sm ${showMVParams ? 'bg-neutral-600 border-neutral-500 text-neutral-200' : 'bg-neutral-700 border-neutral-600 text-neutral-400 hover:text-neutral-200'}`}
+                title="MV Parameters"
               >
-                Layout: {currentMV.layout != null ? currentMV.layout + 1 : '?'}
+                &#9881;
               </button>
-              <select
-                value={currentMV.output_format ?? 0}
-                onChange={(e) => handleMVParamChange({ output_format: Number(e.target.value) })}
-                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
-                title="Output Format"
-              >
-                {Object.entries(OUTPUT_FORMAT_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
-              <select
-                value={currentMV.font ?? 0}
-                onChange={(e) => handleMVParamChange({ font: Number(e.target.value) })}
-                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
-                title="Font"
-              >
-                {Object.entries(TEXT_FONT_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
-              <select
-                value={currentMV.outer_border ?? 0}
-                onChange={(e) => handleMVParamChange({ outer_border: Number(e.target.value) })}
-                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
-                title="Outer Border"
-              >
-                {BORDER_PIXEL_VALUES.map((v) => (
-                  <option key={v} value={v}>Out: {BORDER_PIXEL_LABELS[v]}</option>
-                ))}
-              </select>
-              <select
-                value={currentMV.inner_border ?? 0}
-                onChange={(e) => handleMVParamChange({ inner_border: Number(e.target.value) })}
-                className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-sm"
-                title="Inner Border"
-              >
-                {BORDER_PIXEL_VALUES.map((v) => (
-                  <option key={v} value={v}>In: {BORDER_PIXEL_LABELS[v]}</option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowPresetsModal(true)}
-            disabled={!currentMV}
-            className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm disabled:opacity-50"
-          >
-            Presets
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm disabled:opacity-50"
-          >
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
-          {user?.role === 'admin' && (
-            <button onClick={() => navigate('/admin')} className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm">
-              Admin
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowPresetsModal(true)}
+              disabled={!currentMV}
+              className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm disabled:opacity-50"
+            >
+              Presets
             </button>
-          )}
-          <span className="text-neutral-400 text-sm">{user?.login}</span>
-          <button onClick={handleLogout} className="text-neutral-500 hover:text-neutral-300 text-sm">Logout</button>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm disabled:opacity-50"
+            >
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            {user?.role === 'admin' && (
+              <button onClick={() => navigate('/admin')} className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-sm">
+                Admin
+              </button>
+            )}
+            <span className="text-neutral-400 text-sm">{user?.login}</span>
+            <button onClick={handleLogout} className="text-neutral-500 hover:text-neutral-300 text-sm">Logout</button>
+          </div>
         </div>
+
+        {/* MV Parameters (collapsible) */}
+        {showMVParams && currentMV && (
+          <div className="bg-neutral-800/80 border-b border-x border-neutral-700 rounded-b-lg px-4 py-1.5 flex items-center gap-4 flex-wrap">
+            <button
+              onClick={() => setShowLayoutModal(true)}
+              className="px-2 py-0.5 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded text-xs"
+            >
+              Layout: {currentMV.layout != null ? currentMV.layout + 1 : '?'}
+            </button>
+            <span className="text-neutral-500 text-xs">Output</span>
+            <select
+              value={currentMV.output_format ?? 0}
+              onChange={(e) => handleMVParamChange({ output_format: Number(e.target.value) })}
+              className="px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded text-xs"
+            >
+              {Object.entries(OUTPUT_FORMAT_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+            <span className="text-neutral-500 text-xs">Font</span>
+            <select
+              value={currentMV.font ?? 0}
+              onChange={(e) => handleMVParamChange({ font: Number(e.target.value) })}
+              className="px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded text-xs"
+            >
+              {Object.entries(TEXT_FONT_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+            <span className="text-neutral-500 text-xs">Outer</span>
+            <select
+              value={currentMV.outer_border ?? 0}
+              onChange={(e) => handleMVParamChange({ outer_border: Number(e.target.value) })}
+              className="px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded text-xs"
+            >
+              {BORDER_PIXEL_VALUES.map((v) => (
+                <option key={v} value={v}>{BORDER_PIXEL_LABELS[v]}</option>
+              ))}
+            </select>
+            <span className="text-neutral-500 text-xs">Inner</span>
+            <select
+              value={currentMV.inner_border ?? 0}
+              onChange={(e) => handleMVParamChange({ inner_border: Number(e.target.value) })}
+              className="px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded text-xs"
+            >
+              {BORDER_PIXEL_VALUES.map((v) => (
+                <option key={v} value={v}>{BORDER_PIXEL_LABELS[v]}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Content */}

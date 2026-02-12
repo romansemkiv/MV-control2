@@ -132,28 +132,24 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
     onUpdate()
   }
 
-  const handleTypeChange = async (val: number) => {
-    setSelection(val)
+  const sendImmediate = async (varid: string, val: number, setter: (v: number) => void) => {
+    setter(val)
     setSaving(true)
     try {
-      await sendUmd({ [VARID_UMD_SELECTION]: val })
+      await sendUmd({ [varid]: val })
     } finally {
       setSaving(false)
     }
   }
 
-  const handleSetAll = async () => {
+  const handleTypeChange = (val: number) => sendImmediate(VARID_UMD_SELECTION, val, setSelection)
+
+  const handleSetManual = async () => {
     setSaving(true)
     try {
       const data: Record<string, string | number> = {
-        [VARID_UMD_BOX_COLOUR]: boxColor,
-        [VARID_UMD_BOX_ALPHA]: boxAlpha,
         [VARID_UMD_BOX_X]: boxX,
         [VARID_UMD_BOX_Y]: boxY,
-        [VARID_UMD_TEXT_COLOUR]: textColor,
-        [VARID_UMD_TEXT_ALPHA]: textAlpha,
-        [VARID_UMD_TEXT_SIZE]: textSize,
-        [VARID_UMD_PADDING]: padding,
       }
       if (selection === 1) {
         data[VARID_UMD_TEXT] = text
@@ -197,51 +193,51 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
             />
           )}
 
-          {/* Row 1: Box Color | Box Alpha | Padding */}
+          {/* Row 1: Box Color | Box Alpha | Padding — instant */}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Box Color</label>
-              <select value={boxColor} onChange={(e) => setBoxColor(Number(e.target.value))} className={`w-full ${selectCls}`}>
+              <select value={boxColor} onChange={(e) => sendImmediate(VARID_UMD_BOX_COLOUR, Number(e.target.value), setBoxColor)} disabled={saving} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_BOX_COLOUR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Box Alpha</label>
-              <select value={boxAlpha} onChange={(e) => setBoxAlpha(Number(e.target.value))} className={`w-full ${selectCls}`}>
+              <select value={boxAlpha} onChange={(e) => sendImmediate(VARID_UMD_BOX_ALPHA, Number(e.target.value), setBoxAlpha)} disabled={saving} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_BOX_ALPHA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Padding</label>
-              <select value={padding} onChange={(e) => setPadding(Number(e.target.value))} className={`w-full ${selectCls}`}>
+              <select value={padding} onChange={(e) => sendImmediate(VARID_UMD_PADDING, Number(e.target.value), setPadding)} disabled={saving} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_PADDING_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Row 2: Text Color | Text Alpha | Text Size */}
+          {/* Row 2: Text Color | Text Alpha | Text Size — instant */}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Text Color</label>
-              <select value={textColor} onChange={(e) => setTextColor(Number(e.target.value))} className={`w-full ${selectCls}`}>
+              <select value={textColor} onChange={(e) => sendImmediate(VARID_UMD_TEXT_COLOUR, Number(e.target.value), setTextColor)} disabled={saving} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_TEXT_COLOUR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Text Alpha</label>
-              <select value={textAlpha} onChange={(e) => setTextAlpha(Number(e.target.value))} className={`w-full ${selectCls}`}>
+              <select value={textAlpha} onChange={(e) => sendImmediate(VARID_UMD_TEXT_ALPHA, Number(e.target.value), setTextAlpha)} disabled={saving} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_TEXT_ALPHA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Text Size</label>
-              <select value={textSize} onChange={(e) => setTextSize(Number(e.target.value))} className={`w-full ${selectCls}`}>
+              <select value={textSize} onChange={(e) => sendImmediate(VARID_UMD_TEXT_SIZE, Number(e.target.value), setTextSize)} disabled={saving} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_TEXT_SIZE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Position sliders */}
+          {/* Position sliders + Text — manual via Set */}
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-neutral-500 text-[10px] w-5">X</span>
@@ -265,13 +261,12 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
             </div>
           </div>
 
-          {/* Set button */}
           <button
-            onClick={handleSetAll}
+            onClick={handleSetManual}
             disabled={saving}
             className="w-full px-3 py-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded text-white text-xs"
           >
-            {saving ? 'Saving...' : 'Set'}
+            {saving ? 'Saving...' : isStatic ? 'Set Text & Position' : 'Set Position'}
           </button>
         </div>
       )}
