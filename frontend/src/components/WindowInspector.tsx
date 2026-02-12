@@ -3,7 +3,7 @@ import { api } from '../api/client'
 import {
   PCM_BARS_VALUES, PCM_BARS_LABELS,
   UMD_SELECTION_LABELS, UMD_BOX_COLOUR_LABELS, UMD_TEXT_COLOUR_LABELS,
-  UMD_TEXT_SIZE_LABELS, UMD_PADDING_LABELS,
+  UMD_BOX_ALPHA_LABELS, UMD_TEXT_SIZE_LABELS, UMD_PADDING_LABELS,
   VARID_UMD_SELECTION, VARID_UMD_TEXT,
   VARID_UMD_BOX_COLOUR, VARID_UMD_BOX_ALPHA,
   VARID_UMD_BOX_X, VARID_UMD_BOX_Y,
@@ -99,30 +99,29 @@ function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, 
 function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
   layer: any; layerIndex: number; mvId: number; windowIndex: number; onUpdate: () => void
 }) {
-  const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const [selection, setSelection] = useState<number>(0)
   const [text, setText] = useState('')
   const [boxColor, setBoxColor] = useState(0)
-  const [boxAlpha, setBoxAlpha] = useState(255)
+  const [boxAlpha, setBoxAlpha] = useState(0)
   const [boxX, setBoxX] = useState(0)
   const [boxY, setBoxY] = useState(0)
   const [textColor, setTextColor] = useState(0)
-  const [textAlpha, setTextAlpha] = useState(255)
-  const [textSize, setTextSize] = useState(20)
+  const [textAlpha, setTextAlpha] = useState(0)
+  const [textSize, setTextSize] = useState(0)
   const [padding, setPadding] = useState(0)
 
   useEffect(() => {
     setSelection(parseInt(layer?.[VARID_UMD_SELECTION] ?? '0', 10) || 0)
     setText(layer?.[VARID_UMD_TEXT] ?? '')
     setBoxColor(parseInt(layer?.[VARID_UMD_BOX_COLOUR] ?? '0', 10) || 0)
-    setBoxAlpha(parseInt(layer?.[VARID_UMD_BOX_ALPHA] ?? '255', 10) || 0)
+    setBoxAlpha(parseInt(layer?.[VARID_UMD_BOX_ALPHA] ?? '0', 10) || 0)
     setBoxX(parseInt(layer?.[VARID_UMD_BOX_X] ?? '0', 10) || 0)
     setBoxY(parseInt(layer?.[VARID_UMD_BOX_Y] ?? '0', 10) || 0)
     setTextColor(parseInt(layer?.[VARID_UMD_TEXT_COLOUR] ?? '0', 10) || 0)
-    setTextAlpha(parseInt(layer?.[VARID_UMD_TEXT_ALPHA] ?? '255', 10) || 0)
-    setTextSize(parseInt(layer?.[VARID_UMD_TEXT_SIZE] ?? '20', 10) || 0)
+    setTextAlpha(parseInt(layer?.[VARID_UMD_TEXT_ALPHA] ?? '0', 10) || 0)
+    setTextSize(parseInt(layer?.[VARID_UMD_TEXT_SIZE] ?? '0', 10) || 0)
     setPadding(parseInt(layer?.[VARID_UMD_PADDING] ?? '0', 10) || 0)
   }, [layer])
 
@@ -167,21 +166,18 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
 
   const isOff = selection === 0
   const isStatic = selection === 1
+  const selectCls = "px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-xs"
 
   return (
     <div className="mb-2 border border-neutral-700 rounded">
-      <div
-        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-neutral-750"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span className="text-neutral-400 text-xs">{expanded ? '\u25BC' : '\u25B6'}</span>
-        <span className="text-neutral-300 text-sm font-medium w-16">Layer {layerIndex + 1}</span>
+      {/* Header: layer number + type selector */}
+      <div className="flex items-center gap-2 px-3 py-1.5">
+        <span className="text-neutral-400 text-xs font-medium w-14">Layer {layerIndex + 1}</span>
         <select
           value={selection}
-          onChange={(e) => { e.stopPropagation(); handleTypeChange(Number(e.target.value)) }}
-          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => handleTypeChange(Number(e.target.value))}
           disabled={saving}
-          className="px-2 py-0.5 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-xs"
+          className={selectCls}
         >
           {Object.entries(UMD_SELECTION_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{v}</option>
@@ -189,99 +185,91 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
         </select>
       </div>
 
-      {expanded && !isOff && (
-        <div className="px-3 pb-3 pt-1">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {isStatic && (
-              <div className="col-span-2">
-                <label className="block text-neutral-500 text-xs mb-0.5">Text</label>
-                <input
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm"
-                />
-              </div>
-            )}
+      {!isOff && (
+        <div className="px-3 pb-2 space-y-2">
+          {/* Text input — Static only */}
+          {isStatic && (
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="UMD text"
+              className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm"
+            />
+          )}
 
+          {/* Row 1: Box Color | Box Alpha | Text Color */}
+          <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Box Color</label>
-              <select value={boxColor} onChange={(e) => setBoxColor(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
-                {Object.entries(UMD_BOX_COLOUR_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Box Color</label>
+              <select value={boxColor} onChange={(e) => setBoxColor(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_BOX_COLOUR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Box Alpha</label>
-              <input type="number" min={0} max={255} value={boxAlpha} onChange={(e) => setBoxAlpha(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
-            </div>
-
-            <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Box X</label>
-              <div className="flex items-center gap-2">
-                <input type="range" min={0} max={10000} value={boxX} onChange={(e) => setBoxX(Number(e.target.value))}
-                  className="flex-1 h-1.5 accent-amber-500 cursor-pointer" />
-                <div className="flex items-center">
-                  <input type="number" min={0} max={100} step={0.01} value={+(boxX / 100).toFixed(2)} onChange={(e) => setBoxX(Math.round(Number(e.target.value) * 100))}
-                    className="w-16 px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded-l text-neutral-100 text-xs text-center" />
-                  <span className="px-1 py-0.5 bg-neutral-600 border border-l-0 border-neutral-600 rounded-r text-neutral-400 text-xs">%</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Box Y</label>
-              <div className="flex items-center gap-2">
-                <input type="range" min={0} max={10000} value={boxY} onChange={(e) => setBoxY(Number(e.target.value))}
-                  className="flex-1 h-1.5 accent-amber-500 cursor-pointer" />
-                <div className="flex items-center">
-                  <input type="number" min={0} max={100} step={0.01} value={+(boxY / 100).toFixed(2)} onChange={(e) => setBoxY(Math.round(Number(e.target.value) * 100))}
-                    className="w-16 px-1.5 py-0.5 bg-neutral-700 border border-neutral-600 rounded-l text-neutral-100 text-xs text-center" />
-                  <span className="px-1 py-0.5 bg-neutral-600 border border-l-0 border-neutral-600 rounded-r text-neutral-400 text-xs">%</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Text Color</label>
-              <select value={textColor} onChange={(e) => setTextColor(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
-                {Object.entries(UMD_TEXT_COLOUR_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Box Alpha</label>
+              <select value={boxAlpha} onChange={(e) => setBoxAlpha(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_BOX_ALPHA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Text Alpha</label>
-              <input type="number" min={0} max={255} value={textAlpha} onChange={(e) => setTextAlpha(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
-            </div>
-
-            <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Text Size</label>
-              <select value={textSize} onChange={(e) => setTextSize(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
-                {Object.entries(UMD_TEXT_SIZE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-neutral-500 text-xs mb-0.5">Padding</label>
-              <select value={padding} onChange={(e) => setPadding(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
-                {Object.entries(UMD_PADDING_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Text Color</label>
+              <select value={textColor} onChange={(e) => setTextColor(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_TEXT_COLOUR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
           </div>
 
+          {/* Row 2: Text Size | Text Alpha | Padding */}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Text Size</label>
+              <select value={textSize} onChange={(e) => setTextSize(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_TEXT_SIZE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Text Alpha</label>
+              <select value={textAlpha} onChange={(e) => setTextAlpha(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_BOX_ALPHA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Padding</label>
+              <select value={padding} onChange={(e) => setPadding(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_PADDING_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Position sliders */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-neutral-500 text-[10px] w-5">X</span>
+              <input type="range" min={0} max={10000} value={boxX} onChange={(e) => setBoxX(Number(e.target.value))}
+                className="flex-1 h-1 accent-amber-500 cursor-pointer" />
+              <div className="flex items-center">
+                <input type="number" min={0} max={100} step={0.01} value={+(boxX / 100).toFixed(2)} onChange={(e) => setBoxX(Math.round(Number(e.target.value) * 100))}
+                  className="w-14 px-1 py-0.5 bg-neutral-700 border border-neutral-600 rounded-l text-neutral-100 text-xs text-center" />
+                <span className="px-1 py-0.5 bg-neutral-600 border border-l-0 border-neutral-600 rounded-r text-neutral-400 text-xs">%</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-neutral-500 text-[10px] w-5">Y</span>
+              <input type="range" min={0} max={10000} value={boxY} onChange={(e) => setBoxY(Number(e.target.value))}
+                className="flex-1 h-1 accent-amber-500 cursor-pointer" />
+              <div className="flex items-center">
+                <input type="number" min={0} max={100} step={0.01} value={+(boxY / 100).toFixed(2)} onChange={(e) => setBoxY(Math.round(Number(e.target.value) * 100))}
+                  className="w-14 px-1 py-0.5 bg-neutral-700 border border-neutral-600 rounded-l text-neutral-100 text-xs text-center" />
+                <span className="px-1 py-0.5 bg-neutral-600 border border-l-0 border-neutral-600 rounded-r text-neutral-400 text-xs">%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Set button */}
           <button
             onClick={handleSetAll}
             disabled={saving}
-            className="mt-3 w-full px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded text-white text-sm"
+            className="w-full px-3 py-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded text-white text-xs"
           >
             {saving ? 'Saving...' : 'Set'}
           </button>
