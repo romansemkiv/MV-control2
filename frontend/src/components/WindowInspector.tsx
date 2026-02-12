@@ -3,7 +3,7 @@ import { api } from '../api/client'
 import {
   PCM_BARS_VALUES, PCM_BARS_LABELS,
   UMD_SELECTION_LABELS, UMD_BOX_COLOUR_LABELS, UMD_TEXT_COLOUR_LABELS,
-  UMD_BOX_ALPHA_LABELS, UMD_TEXT_SIZE_LABELS, UMD_PADDING_LABELS,
+  UMD_BOX_ALPHA_LABELS, UMD_TEXT_ALPHA_LABELS, UMD_TEXT_SIZE_LABELS, UMD_PADDING_LABELS,
   VARID_UMD_SELECTION, VARID_UMD_TEXT,
   VARID_UMD_BOX_COLOUR, VARID_UMD_BOX_ALPHA,
   VARID_UMD_BOX_X, VARID_UMD_BOX_Y,
@@ -197,7 +197,7 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
             />
           )}
 
-          {/* Row 1: Box Color | Box Alpha | Text Color */}
+          {/* Row 1: Box Color | Box Alpha | Padding */}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Box Color</label>
@@ -212,31 +212,31 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
               </select>
             </div>
             <div>
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Padding</label>
+              <select value={padding} onChange={(e) => setPadding(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_PADDING_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Row 2: Text Color | Text Alpha | Text Size */}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Text Color</label>
               <select value={textColor} onChange={(e) => setTextColor(Number(e.target.value))} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_TEXT_COLOUR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
-          </div>
-
-          {/* Row 2: Text Size | Text Alpha | Padding */}
-          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-neutral-500 text-[10px] mb-0.5">Text Alpha</label>
+              <select value={textAlpha} onChange={(e) => setTextAlpha(Number(e.target.value))} className={`w-full ${selectCls}`}>
+                {Object.entries(UMD_TEXT_ALPHA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
             <div>
               <label className="block text-neutral-500 text-[10px] mb-0.5">Text Size</label>
               <select value={textSize} onChange={(e) => setTextSize(Number(e.target.value))} className={`w-full ${selectCls}`}>
                 {Object.entries(UMD_TEXT_SIZE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-neutral-500 text-[10px] mb-0.5">Text Alpha</label>
-              <select value={textAlpha} onChange={(e) => setTextAlpha(Number(e.target.value))} className={`w-full ${selectCls}`}>
-                {Object.entries(UMD_BOX_ALPHA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-neutral-500 text-[10px] mb-0.5">Padding</label>
-              <select value={padding} onChange={(e) => setPadding(Number(e.target.value))} className={`w-full ${selectCls}`}>
-                {Object.entries(UMD_PADDING_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
           </div>
