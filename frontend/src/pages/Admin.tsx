@@ -26,31 +26,33 @@ function Admin() {
 
   return (
     <div className="min-h-screen bg-neutral-900 text-neutral-100">
-      <div className="bg-neutral-800 border-b border-neutral-700 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <span className="font-bold text-amber-500">MV-Control</span>
-          <span className="text-neutral-400">Admin</span>
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-neutral-800 border-b border-x border-neutral-700 rounded-b-lg px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="font-bold text-amber-500">MV-Control</span>
+            <span className="text-neutral-400">Admin</span>
+          </div>
+          <button onClick={() => navigate('/main')} className="text-neutral-400 hover:text-neutral-200 text-sm">Back to Main</button>
         </div>
-        <button onClick={() => navigate('/main')} className="text-neutral-400 hover:text-neutral-200 text-sm">Back to Main</button>
-      </div>
 
-      <div className="flex border-b border-neutral-700">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm ${tab === t.key ? 'text-amber-400 border-b-2 border-amber-400' : 'text-neutral-400 hover:text-neutral-200'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+        <div className="flex border-b border-neutral-700 mt-2">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 text-sm ${tab === t.key ? 'text-amber-400 border-b-2 border-amber-400' : 'text-neutral-400 hover:text-neutral-200'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="p-4">
-        {tab === 'users' && <UsersTab />}
-        {tab === 'access' && <AccessTab />}
-        {tab === 'integrations' && <IntegrationsTab />}
-        {tab === 'status' && <StatusTab />}
+        <div className="p-4">
+          {tab === 'users' && <UsersTab />}
+          {tab === 'access' && <AccessTab />}
+          {tab === 'integrations' && <IntegrationsTab />}
+          {tab === 'status' && <StatusTab />}
+        </div>
       </div>
     </div>
   )
@@ -171,8 +173,19 @@ function AccessTab() {
       {selectedUser && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <h3 className="text-neutral-400 text-sm mb-2">Sources</h3>
-            <div className="space-y-1 max-h-60 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-neutral-400 text-sm">Sources</h3>
+              <button
+                onClick={() => setAccess((prev) => ({
+                  ...prev,
+                  source_ids: prev.source_ids.length === sources.length ? [] : sources.map((s: any) => s.id),
+                }))}
+                className="text-amber-500 hover:text-amber-400 text-[10px]"
+              >
+                {access.source_ids.length === sources.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
+            <div className="space-y-1 max-h-[60vh] overflow-y-auto">
               {sources.map((s: any) => (
                 <label key={s.id} className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={access.source_ids.includes(s.id)} onChange={() => toggleSource(s.id)} className="accent-amber-500" />
@@ -182,8 +195,19 @@ function AccessTab() {
             </div>
           </div>
           <div>
-            <h3 className="text-neutral-400 text-sm mb-2">Multiviewers</h3>
-            <div className="space-y-1">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-neutral-400 text-sm">Multiviewers</h3>
+              <button
+                onClick={() => setAccess((prev) => ({
+                  ...prev,
+                  mv_ids: prev.mv_ids.length === mvs.length ? [] : mvs.map((m: any) => m.id),
+                }))}
+                className="text-amber-500 hover:text-amber-400 text-[10px]"
+              >
+                {access.mv_ids.length === mvs.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
+            <div className="space-y-1 max-h-[60vh] overflow-y-auto">
               {mvs.map((m: any) => (
                 <label key={m.id} className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={access.mv_ids.includes(m.id)} onChange={() => toggleMV(m.id)} className="accent-amber-500" />
