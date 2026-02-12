@@ -8,7 +8,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.preset import Preset
-from app.schemas.preset import PresetCreate, PresetResponse, PresetDetail
+from app.schemas.preset import PresetCreate, PresetResponse, PresetDetail, ApplyPresetRequest
 
 router = APIRouter(prefix="/api/presets", tags=["presets"])
 
@@ -47,47 +47,75 @@ def delete_preset(preset_id: int, user: User = Depends(get_current_user), db: Se
 
 
 @router.post("/{preset_id}/apply")
-def apply_preset(preset_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def apply_preset(preset_id: int, body: ApplyPresetRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     preset = db.query(Preset).filter(Preset.id == preset_id, Preset.user_id == user.id).first()
     if not preset:
         raise HTTPException(status_code=404, detail="Preset not found")
 
-    from app.services.integration import get_nexx_client
-    from app.protocol_mappings import VARID_MV_LAYOUT, VARID_MV_FONT, VARID_MV_OUTPUT_FORMAT, VARID_MV_OUTER_BORDER, VARID_MV_INNER_BORDER, VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index
-
-    nexx = get_nexx_client(db)
-    if not nexx:
-        raise HTTPException(status_code=503, detail="NEXX not configured")
+    from app.services.integration import get_nexx_client, get_quartz_client
+    from app.models.multiviewer import Multiviewer
+    from app.protocol_mappings import (
+        VARID_MV_LAYOUT, VARID_MV_FONT, VARID_MV_OUTPUT_FORMAT,
+        VARID_MV_OUTER_BORDER, VARID_MV_INNER_BORDER,
+        VARID_PCM_BARS, UMD_VARIDS, pcm_value_to_index,
+    )
 
     payload = json.loads(preset.payload_json)
-    mv_idx = payload.get("mv_nexx_index")
-    if mv_idx is None:
-        raise HTTPException(status_code=400, detail="Preset missing mv_nexx_index")
+    cats = set(body.categories)
 
-    params = payload.get("params", {})
+    # Support both old format (single MV) and new format (multi-MV)
+    mvs_data = payload.get("mvs")
+    if mvs_data is None:
+        # Legacy single-MV format
+        mvs_data = [{"mv_nexx_index": payload.get("mv_nexx_index"), **payload.get("params", {})}]
 
-    if "layout" in params:
-        nexx.set_parameter(f"{VARID_MV_LAYOUT}.{mv_idx}", str(params["layout"]))
-    if "font" in params:
-        nexx.set_parameter(f"{VARID_MV_FONT}.{mv_idx}", str(params["font"]))
-    if "outer_border" in params:
-        nexx.set_parameter(f"{VARID_MV_OUTER_BORDER}.{mv_idx}", str(params["outer_border"]))
-    if "inner_border" in params:
-        nexx.set_parameter(f"{VARID_MV_INNER_BORDER}.{mv_idx}", str(params["inner_border"]))
-    if "output_format" in params:
-        nexx.set_parameter(f"{VARID_MV_OUTPUT_FORMAT}.{mv_idx}", str(params["output_format"]))
+    nexx = None
+    quartz = None
 
-    for win in params.get("windows", []):
-        win_idx = win.get("index")
-        if win_idx is None:
+    for saved_mv in mvs_data:
+        src_idx = str(saved_mv.get("mv_nexx_index"))
+        target_mv_id = body.targets.get(src_idx)
+        if target_mv_id is None:
             continue
-        if "pcm_bars" in win:
-            pcm_index = pcm_value_to_index(win["pcm_bars"])
-            nexx.set_parameter(f"{VARID_PCM_BARS}.{mv_idx}.{win_idx}", str(pcm_index))
-        for layer_idx, layer_data in enumerate(win.get("umd", [])):
-            for varid_base, value in layer_data.items():
-                if varid_base in UMD_VARIDS:
-                    nexx.set_parameter(f"{varid_base}.{mv_idx}.{win_idx}.{layer_idx}", str(value))
+
+        target_mv = db.query(Multiviewer).filter(Multiviewer.id == target_mv_id).first()
+        if not target_mv:
+            continue
+        tgt_idx = target_mv.nexx_index
+
+        # NEXX params
+        if cats & {"layout", "mv_params", "umd", "pcm"}:
+            if not nexx:
+                nexx = get_nexx_client(db)
+            if not nexx:
+                raise HTTPException(status_code=503, detail="NEXX not configured")
+
+        if "layout" in cats and "layout" in saved_mv:
+            nexx.set_parameter(f"{VARID_MV_LAYOUT}.{tgt_idx}", str(saved_mv["layout"]))
+        if "mv_params" in cats:
+            for key, varid in [("font", VARID_MV_FONT), ("output_format", VARID_MV_OUTPUT_FORMAT),
+                               ("outer_border", VARID_MV_OUTER_BORDER), ("inner_border", VARID_MV_INNER_BORDER)]:
+                if key in saved_mv:
+                    nexx.set_parameter(f"{varid}.{tgt_idx}", str(saved_mv[key]))
+
+        for win in saved_mv.get("windows", []):
+            win_idx = win.get("index")
+            if win_idx is None:
+                continue
+            if "pcm" in cats and "pcm_bars" in win:
+                pcm_index = pcm_value_to_index(win["pcm_bars"])
+                nexx.set_parameter(f"{VARID_PCM_BARS}.{tgt_idx}.{win_idx}", str(pcm_index))
+            if "umd" in cats:
+                for layer_idx, layer_data in enumerate(win.get("umd", [])):
+                    for varid_base, value in layer_data.items():
+                        if varid_base in UMD_VARIDS:
+                            nexx.set_parameter(f"{varid_base}.{tgt_idx}.{win_idx}.{layer_idx}", str(value))
+            if "sources" in cats and "source_input" in win and win["source_input"] is not None:
+                if not quartz:
+                    quartz = get_quartz_client(db)
+                if quartz:
+                    output = tgt_idx * 16 + win_idx + 1
+                    quartz.switch(output, win["source_input"])
 
     return {"ok": True}
 

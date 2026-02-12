@@ -65,6 +65,7 @@ export const api = {
     request('/api/presets', { method: 'POST', body: JSON.stringify(data) }),
   getPreset: (id: number) => request(`/api/presets/${id}`),
   deletePreset: (id: number) => request(`/api/presets/${id}`, { method: 'DELETE' }),
-  applyPreset: (id: number) => request(`/api/presets/${id}/apply`, { method: 'POST' }),
+  applyPreset: (id: number, body: { categories: string[]; targets: Record<string, number> }) =>
+    request(`/api/presets/${id}/apply`, { method: 'POST', body: JSON.stringify(body) }),
   exportPreset: (id: number) => `${BASE}/api/presets/${id}/export`,
 }

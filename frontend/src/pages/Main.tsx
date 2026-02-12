@@ -220,7 +220,7 @@ function Main() {
 
       {showLayoutModal && <LayoutPreviewModal onSelect={handleSelectLayout} onClose={() => setShowLayoutModal(false)} />}
       {showPresetsModal && currentMV && (
-        <PresetsModal mvId={currentMV.id} mvNexxIndex={currentMV.nexx_index} onClose={() => setShowPresetsModal(false)} />
+        <PresetsModal mvId={currentMV.id} multiviewers={multiviewers} routing={routing} onClose={() => setShowPresetsModal(false)} />
       )}
     </div>
   )

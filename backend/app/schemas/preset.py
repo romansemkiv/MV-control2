@@ -17,3 +17,8 @@ class PresetDetail(BaseModel):
     name: str
     payload: dict
     created_at: str
+
+
+class ApplyPresetRequest(BaseModel):
+    categories: list[str]
+    targets: dict[str, int]  # saved mv nexx_index (str) → target mv_id
