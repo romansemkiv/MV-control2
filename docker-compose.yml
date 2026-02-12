@@ -16,7 +16,7 @@ services:
   app:
     build: .
     ports:
-      - "8100:8000"
+      - "8200:8000"
     environment:
       DATABASE_URL: postgresql://mvcontrol:mvcontrol@db:5432/mvcontrol
       SECRET_KEY: change-me-in-production
