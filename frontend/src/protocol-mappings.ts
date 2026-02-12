@@ -87,9 +87,9 @@ export const PCM_BARS_LABELS: Record<PcmBarsValue, string> = {
 export const UmdSelection = {
   Off: 0,
   Static: 1,
-  DynamicLine1: 2,
-  NtpTime: 3,
-  NtpTimeOffset: 4,
+  DynamicLine1: 3,
+  NtpTime: 7,
+  NtpTimeOffset: 8,
 } as const
 
 export type UmdSelection = (typeof UmdSelection)[keyof typeof UmdSelection]
@@ -100,6 +100,58 @@ export const UMD_SELECTION_LABELS: Record<UmdSelection, string> = {
   [UmdSelection.DynamicLine1]: 'Dynamic Line 1',
   [UmdSelection.NtpTime]: 'NTP Time',
   [UmdSelection.NtpTimeOffset]: 'NTP Time with Offset',
+}
+
+// ============================================================================
+// UMD Box Colour (VarID 2710)
+// ============================================================================
+
+export const UMD_BOX_COLOUR_LABELS: Record<number, string> = {
+  0: 'Black',
+  1: 'Blue',
+  2: 'Green',
+  3: 'Cyan',
+  4: 'Red',
+  5: 'Magenta',
+  6: 'Yellow',
+  7: 'White',
+}
+
+// ============================================================================
+// UMD Text Colour (VarID 2714)
+// ============================================================================
+
+export const UMD_TEXT_COLOUR_LABELS: Record<number, string> = {
+  0: 'Blue',
+  1: 'Green',
+  2: 'Cyan',
+  3: 'Red',
+  4: 'Magenta',
+  5: 'Yellow',
+  6: 'White',
+  7: 'Black',
+}
+
+// ============================================================================
+// UMD Text Size (VarID 2717)
+// ============================================================================
+
+export const UMD_TEXT_SIZE_LABELS: Record<number, string> = {
+  0: 'Small',
+  1: 'Medium',
+  2: 'Large',
+  3: 'X-Large',
+}
+
+// ============================================================================
+// UMD Padding (VarID 2733)
+// ============================================================================
+
+export const UMD_PADDING_LABELS: Record<number, string> = {
+  0: 'None',
+  1: 'Small',
+  2: 'Medium',
+  3: 'Large',
 }
 
 // ============================================================================

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import {
   PCM_BARS_VALUES, PCM_BARS_LABELS,
-  UMD_SELECTION_LABELS,
+  UMD_SELECTION_LABELS, UMD_BOX_COLOUR_LABELS, UMD_TEXT_COLOUR_LABELS,
+  UMD_TEXT_SIZE_LABELS, UMD_PADDING_LABELS,
   VARID_UMD_SELECTION, VARID_UMD_TEXT,
   VARID_UMD_BOX_COLOUR, VARID_UMD_BOX_ALPHA,
   VARID_UMD_BOX_X, VARID_UMD_BOX_Y,
@@ -18,17 +19,6 @@ interface Props {
   mvNexxIndex: number
   routing: any[]
   onUpdate: () => void
-}
-
-function nexxColorToHex(val: string | number): string {
-  const n = typeof val === 'string' ? parseInt(val, 10) : val
-  if (isNaN(n) || n < 0) return '#000000'
-  const hex = (n & 0xFFFFFF).toString(16).padStart(6, '0')
-  return `#${hex}`
-}
-
-function hexToNexxColor(hex: string): number {
-  return parseInt(hex.replace('#', ''), 16)
 }
 
 function WindowInspector({ mvId, windowIndex, windowData, sources, mvNexxIndex, routing, onUpdate }: Props) {
@@ -114,11 +104,11 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
 
   const [selection, setSelection] = useState<number>(0)
   const [text, setText] = useState('')
-  const [boxColor, setBoxColor] = useState('#000000')
+  const [boxColor, setBoxColor] = useState(0)
   const [boxAlpha, setBoxAlpha] = useState(255)
   const [boxX, setBoxX] = useState(0)
   const [boxY, setBoxY] = useState(0)
-  const [textColor, setTextColor] = useState('#ffffff')
+  const [textColor, setTextColor] = useState(0)
   const [textAlpha, setTextAlpha] = useState(255)
   const [textSize, setTextSize] = useState(20)
   const [padding, setPadding] = useState(0)
@@ -126,11 +116,11 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
   useEffect(() => {
     setSelection(parseInt(layer?.[VARID_UMD_SELECTION] ?? '0', 10) || 0)
     setText(layer?.[VARID_UMD_TEXT] ?? '')
-    setBoxColor(nexxColorToHex(layer?.[VARID_UMD_BOX_COLOUR] ?? '0'))
+    setBoxColor(parseInt(layer?.[VARID_UMD_BOX_COLOUR] ?? '0', 10) || 0)
     setBoxAlpha(parseInt(layer?.[VARID_UMD_BOX_ALPHA] ?? '255', 10) || 0)
     setBoxX(parseInt(layer?.[VARID_UMD_BOX_X] ?? '0', 10) || 0)
     setBoxY(parseInt(layer?.[VARID_UMD_BOX_Y] ?? '0', 10) || 0)
-    setTextColor(nexxColorToHex(layer?.[VARID_UMD_TEXT_COLOUR] ?? '16777215'))
+    setTextColor(parseInt(layer?.[VARID_UMD_TEXT_COLOUR] ?? '0', 10) || 0)
     setTextAlpha(parseInt(layer?.[VARID_UMD_TEXT_ALPHA] ?? '255', 10) || 0)
     setTextSize(parseInt(layer?.[VARID_UMD_TEXT_SIZE] ?? '20', 10) || 0)
     setPadding(parseInt(layer?.[VARID_UMD_PADDING] ?? '0', 10) || 0)
@@ -157,11 +147,11 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
     setSaving(true)
     try {
       const data: Record<string, string | number> = {
-        [VARID_UMD_BOX_COLOUR]: hexToNexxColor(boxColor),
+        [VARID_UMD_BOX_COLOUR]: boxColor,
         [VARID_UMD_BOX_ALPHA]: boxAlpha,
         [VARID_UMD_BOX_X]: boxX,
         [VARID_UMD_BOX_Y]: boxY,
-        [VARID_UMD_TEXT_COLOUR]: hexToNexxColor(textColor),
+        [VARID_UMD_TEXT_COLOUR]: textColor,
         [VARID_UMD_TEXT_ALPHA]: textAlpha,
         [VARID_UMD_TEXT_SIZE]: textSize,
         [VARID_UMD_PADDING]: padding,
@@ -215,10 +205,12 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
 
             <div>
               <label className="block text-neutral-500 text-xs mb-0.5">Box Color</label>
-              <div className="flex gap-1 items-center">
-                <input type="color" value={boxColor} onChange={(e) => setBoxColor(e.target.value)} className="w-8 h-7 bg-transparent border-0 cursor-pointer" />
-                <span className="text-neutral-400 text-xs">{boxColor}</span>
-              </div>
+              <select value={boxColor} onChange={(e) => setBoxColor(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
+                {Object.entries(UMD_BOX_COLOUR_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-neutral-500 text-xs mb-0.5">Box Alpha</label>
@@ -253,10 +245,12 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
 
             <div>
               <label className="block text-neutral-500 text-xs mb-0.5">Text Color</label>
-              <div className="flex gap-1 items-center">
-                <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-8 h-7 bg-transparent border-0 cursor-pointer" />
-                <span className="text-neutral-400 text-xs">{textColor}</span>
-              </div>
+              <select value={textColor} onChange={(e) => setTextColor(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
+                {Object.entries(UMD_TEXT_COLOUR_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-neutral-500 text-xs mb-0.5">Text Alpha</label>
@@ -266,13 +260,21 @@ function UMDLayer({ layer, layerIndex, mvId, windowIndex, onUpdate }: {
 
             <div>
               <label className="block text-neutral-500 text-xs mb-0.5">Text Size</label>
-              <input type="number" min={1} value={textSize} onChange={(e) => setTextSize(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
+              <select value={textSize} onChange={(e) => setTextSize(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
+                {Object.entries(UMD_TEXT_SIZE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-neutral-500 text-xs mb-0.5">Padding</label>
-              <input type="number" min={0} value={padding} onChange={(e) => setPadding(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm" />
+              <select value={padding} onChange={(e) => setPadding(Number(e.target.value))}
+                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-sm">
+                {Object.entries(UMD_PADDING_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
             </div>
           </div>
 
